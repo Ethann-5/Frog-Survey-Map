@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Frog_Map </title>
+  <title>Frog Map 23/09</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- Leaflet CSS & JS -->
@@ -33,6 +33,17 @@
       padding:8px;
       border-radius:5px;
     }
+    #toggleContainer {
+      position:absolute;
+      top:90px;
+      left:50%;
+      transform:translateX(-50%);
+      z-index:1000;
+      background:white;
+      padding:4px 8px;
+      border-radius:4px;
+      font-size:14px;
+    }
   </style>
 </head>
 <body>
@@ -42,7 +53,7 @@
 <div id="slider"></div>
 
 <div id="toggleContainer">
-<label><input type="checkbox" id="Remove Cane Toads? (Ethically)"> Remove Cane Toads</label>
+  <label><input type="checkbox" id="removeCaneToad"> Remove Cane Toads?</label>
 </div>
 
 <div id="barChartContainer">
@@ -53,7 +64,7 @@
   // =======================
   // Hardcoded survey data
   // =======================
-  const surveyData = [
+const surveyData = [
   {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2015, total_count:4, species_name: "Adelotus brevis", common_name: "Tusked Frog", url: "https://www.frogid.net.au/frogs/adelotus-brevis"},
   {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2016, total_count:4, species_name: "Adelotus brevis", common_name: "Tusked Frog", url: "https://www.frogid.net.au/frogs/adelotus-brevis"},
   {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2017, total_count:2, species_name: "Adelotus brevis", common_name: "Tusked Frog", url: "https://www.frogid.net.au/frogs/adelotus-brevis"},
@@ -313,12 +324,13 @@
   {site_number:6, site_name: "Maleny", lat:-26.760438, lon:152.851298, year:2025, total_count:33, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
   {site_number:5, site_name: "MRBBG", lat:-26.71882, lon:153.023028, year:2025, total_count:11, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
   {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2025, total_count:54, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
+
   ];
 
   // =======================
   // Initialize map
   // =======================
-  const map = L.map('map').setView([-27.5,153.0], 9);
+  const map = L.map('map').setView([-26.5, 153.02], 9);
 
   const baseLayers = {
     "Carto Positron": L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
@@ -381,7 +393,13 @@
   // =======================
   function updateMarkers(year) {
     markersLayer.clearLayers();
-    const filtered = surveyData.filter(d=>d.year==year);
+    const removeCaneToad = document.getElementById('removeCaneToad').checked;
+    
+    let filtered = surveyData.filter(d => d.year==year);
+    if(removeCaneToad){
+      filtered = filtered.filter(d => d.common_name !== "Cane Toad");
+    }
+
     const grouped = groupData(filtered);
 
     // Update circle markers
@@ -440,6 +458,12 @@
     updateMarkers(year);
   });
 
+  // Update map when the Cane Toad toggle is changed
+  document.getElementById('removeCaneToad').addEventListener('change', () => {
+    const currentYear = slider.noUiSlider.get();
+    updateMarkers(currentYear);
+  });
+
   // Initialize first year
   updateMarkers(years[0]);
 
@@ -464,6 +488,4 @@
   L.control.layers(baseLayers, {"Survey Sites": markersLayer}).addTo(map);
 
 </script>
-</body>
-
-</html>
+</body
