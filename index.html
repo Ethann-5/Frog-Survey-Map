@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Frog_Map </title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- noUiSlider -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.0/nouislider.min.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.0/nouislider.min.js"></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    #map { height: 100vh; }
+    .legend { background:white; line-height:1.5em; padding:6px; border-radius:5px; }
+    .legend i { width:18px; height:18px; float:left; margin-right:8px; opacity:0.7; }
+    #slider { position: absolute; top:10px; left:50%; transform:translateX(-50%); z-index:1000; width:300px; }
+    #yearDisplay { position:absolute; top:50px; left:50%; transform:translateX(-50%); z-index:1000; font-size:16px; font-weight:bold; background:white; padding:4px 8px; border-radius:4px; }
+    #barChartContainer {
+      position:absolute;
+      bottom:10px;
+      left:10px;
+      z-index:1000;
+      width:340px;
+      height:200px;
+      background:white;
+      padding:8px;
+      border-radius:5px;
+    }
+  </style>
+</head>
+<body>
+
+<div id="map"></div>
+<div id="yearDisplay">Year: 2015</div>
+<div id="slider"></div>
+
+<div id="barChartContainer">
+  <canvas id="barChart"></canvas>
+</div>
+
+<script>
+  // =======================
+  // Hardcoded survey data
+  // =======================
+  const surveyData = [
+  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2015, total_count:4, species_name: "Adelotus brevis", common_name: "Tusked Frog", url: "https://www.frogid.net.au/frogs/adelotus-brevis"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2016, total_count:4, species_name: "Adelotus brevis", common_name: "Tusked Frog", url: "https://www.frogid.net.au/frogs/adelotus-brevis"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2017, total_count:2, species_name: "Adelotus brevis", common_name: "Tusked Frog", url: "https://www.frogid.net.au/frogs/adelotus-brevis"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2018, total_count:2, species_name: "Adelotus brevis", common_name: "Tusked Frog", url: "https://www.frogid.net.au/frogs/adelotus-brevis"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2019, total_count:3, species_name: "Adelotus brevis", common_name: "Tusked Frog", url: "https://www.frogid.net.au/frogs/adelotus-brevis"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2020, total_count:2, species_name: "Adelotus brevis", common_name: "Tusked Frog", url: "https://www.frogid.net.au/frogs/adelotus-brevis"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2022, total_count:3, species_name: "Adelotus brevis", common_name: "Tusked Frog", url: "https://www.frogid.net.au/frogs/adelotus-brevis"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2023, total_count:3, species_name: "Adelotus brevis", common_name: "Tusked Frog", url: "https://www.frogid.net.au/frogs/adelotus-brevis"},
+  {site_number:5, site_name: "MRBBG", lat:-26.71882, lon:153.023028, year:2023, total_count:5, species_name: "Adelotus brevis", common_name: "Tusked Frog", url: "https://www.frogid.net.au/frogs/adelotus-brevis"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2024, total_count:3, species_name: "Adelotus brevis", common_name: "Tusked Frog", url: "https://www.frogid.net.au/frogs/adelotus-brevis"},
+  {site_number:5, site_name: "MRBBG", lat:-26.71882, lon:153.023028, year:2024, total_count:6, species_name: "Adelotus brevis", common_name: "Tusked Frog", url: "https://www.frogid.net.au/frogs/adelotus-brevis"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2025, total_count:11, species_name: "Adelotus brevis", common_name: "Tusked Frog", url: "https://www.frogid.net.au/frogs/adelotus-brevis"},
+  {site_number:6, site_name: "Maleny", lat:-26.760438, lon:152.851298, year:2025, total_count:2, species_name: "Adelotus brevis", common_name: "Tusked Frog", url: "https://www.frogid.net.au/frogs/adelotus-brevis"},
+  {site_number:5, site_name: "MRBBG", lat:-26.71882, lon:153.023028, year:2025, total_count:5, species_name: "Adelotus brevis", common_name: "Tusked Frog", url: "https://www.frogid.net.au/frogs/adelotus-brevis"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2025, total_count:6, species_name: "Crinia parinsignifera", common_name: "Eastern Sign-bearing Froglet", url: "https://www.frogid.net.au/frogs/crinia-parinsignifera"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2014, total_count:2, species_name: "Crinia tinnula", common_name: "Wallum Froglet", url: "https://www.frogid.net.au/frogs/crinia-tinnula"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2015, total_count:18, species_name: "Crinia tinnula", common_name: "Wallum Froglet", url: "https://www.frogid.net.au/frogs/crinia-tinnula"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2016, total_count:31, species_name: "Crinia tinnula", common_name: "Wallum Froglet", url: "https://www.frogid.net.au/frogs/crinia-tinnula"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2017, total_count:14, species_name: "Crinia tinnula", common_name: "Wallum Froglet", url: "https://www.frogid.net.au/frogs/crinia-tinnula"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2018, total_count:9, species_name: "Crinia tinnula", common_name: "Wallum Froglet", url: "https://www.frogid.net.au/frogs/crinia-tinnula"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2019, total_count:7, species_name: "Crinia tinnula", common_name: "Wallum Froglet", url: "https://www.frogid.net.au/frogs/crinia-tinnula"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2022, total_count:2, species_name: "Crinia tinnula", common_name: "Wallum Froglet", url: "https://www.frogid.net.au/frogs/crinia-tinnula"},
+  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2022, total_count:3, species_name: "Crinia tinnula", common_name: "Wallum Froglet", url: "https://www.frogid.net.au/frogs/crinia-tinnula"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2023, total_count:3, species_name: "Crinia tinnula", common_name: "Wallum Froglet", url: "https://www.frogid.net.au/frogs/crinia-tinnula"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2014, total_count:5, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2015, total_count:2, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2015, total_count:20, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2016, total_count:2, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
+  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2016, total_count:4, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2016, total_count:8, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2017, total_count:6, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2018, total_count:8, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
+  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2018, total_count:7, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
+  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2018, total_count:25, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
+  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2019, total_count:8, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
+  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2019, total_count:8, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2019, total_count:38, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2020, total_count:7, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
+  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2020, total_count:22, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2020, total_count:38, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2021, total_count:8, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
+  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2021, total_count:22, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2021, total_count:74, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2022, total_count:3, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
+  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2022, total_count:11, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2022, total_count:85, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2023, total_count:2, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
+  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2023, total_count:4, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2023, total_count:6, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
+  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2024, total_count:17, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2024, total_count:18, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2025, total_count:2, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
+  {site_number:5, site_name: "MRBBG", lat:-26.71882, lon:153.023028, year:2025, total_count:7, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2025, total_count:5, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2017, total_count:2, species_name: "Limnodynastes terraereginae", common_name: "Superb Banjo Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-terraeregina"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2014, total_count:2, species_name: "Litoria caerulea", common_name: "Green Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-caerulea"},
+  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2014, total_count:3, species_name: "Litoria caerulea", common_name: "Green Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-caerulea"},
+  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2015, total_count:3, species_name: "Litoria caerulea", common_name: "Green Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-caerulea"},
+  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2018, total_count:2, species_name: "Litoria caerulea", common_name: "Green Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-caerulea"},
+  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2019, total_count:4, species_name: "Litoria caerulea", common_name: "Green Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-caerulea"},
+  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2020, total_count:2, species_name: "Litoria caerulea", common_name: "Green Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-caerulea"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2021, total_count:2, species_name: "Litoria caerulea", common_name: "Green Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-caerulea"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2022, total_count:2, species_name: "Litoria caerulea", common_name: "Green Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-caerulea"},
+  {site_number:6, site_name: "Maleny", lat:-26.760438, lon:152.851298, year:2025, total_count:2, species_name: "Litoria caerulea", common_name: "Green Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-caerulea"},
+  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2016, total_count:3, species_name: "Litoria dentata", common_name: "Robust Bleating Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-dentata"},
+  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2020, total_count:2, species_name: "Litoria dentata", common_name: "Robust Bleating Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-dentata"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2014, total_count:9, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2014, total_count:3, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2014, total_count:4, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2015, total_count:15, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2015, total_count:5, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2015, total_count:4, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2015, total_count:4, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2016, total_count:4, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2016, total_count:7, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2016, total_count:7, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2016, total_count:49, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2016, total_count:5, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2016, total_count:2, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2017, total_count:6, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2017, total_count:6, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2017, total_count:17, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2017, total_count:2, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2017, total_count:2, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2018, total_count:7, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2018, total_count:4, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2018, total_count:21, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2018, total_count:41, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2018, total_count:15, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2019, total_count:11, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2019, total_count:14, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2019, total_count:22, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2019, total_count:39, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2019, total_count:10, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2020, total_count:14, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2020, total_count:3, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2020, total_count:13, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2020, total_count:15, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2020, total_count:44, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2021, total_count:77, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2021, total_count:34, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2021, total_count:56, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2022, total_count:49, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2022, total_count:14, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2022, total_count:42, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2022, total_count:52, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2023, total_count:23, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2023, total_count:3, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2023, total_count:30, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2023, total_count:4, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2024, total_count:39, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2024, total_count:3, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2024, total_count:30, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2024, total_count:36, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2025, total_count:31, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2025, total_count:2, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:5, site_name: "MRBBG", lat:-26.71882, lon:153.023028, year:2025, total_count:2, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2025, total_count:47, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2020, total_count:2, species_name: "Litoria freycineti", common_name: "Wallum Rocket Frog", url: "https://www.frogid.net.au/frogs/litoria-freycineti"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2016, total_count:2, species_name: "Litoria gracilenta", common_name: "Graceful Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-gracilenta"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2017, total_count:2, species_name: "Litoria gracilenta", common_name: "Graceful Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-gracilenta"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2017, total_count:3, species_name: "Litoria gracilenta", common_name: "Graceful Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-gracilenta"},
+  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2017, total_count:2, species_name: "Litoria gracilenta", common_name: "Graceful Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-gracilenta"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2018, total_count:20, species_name: "Litoria gracilenta", common_name: "Graceful Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-gracilenta"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2018, total_count:2, species_name: "Litoria gracilenta", common_name: "Graceful Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-gracilenta"},
+  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2018, total_count:2, species_name: "Litoria gracilenta", common_name: "Graceful Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-gracilenta"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2019, total_count:2, species_name: "Litoria gracilenta", common_name: "Graceful Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-gracilenta"},
+  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2019, total_count:5, species_name: "Litoria gracilenta", common_name: "Graceful Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-gracilenta"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2019, total_count:4, species_name: "Litoria gracilenta", common_name: "Graceful Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-gracilenta"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2021, total_count:3, species_name: "Litoria gracilenta", common_name: "Graceful Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-gracilenta"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2022, total_count:3, species_name: "Litoria gracilenta", common_name: "Graceful Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-gracilenta"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2022, total_count:7, species_name: "Litoria gracilenta", common_name: "Graceful Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-gracilenta"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2025, total_count:3, species_name: "Litoria gracilenta", common_name: "Graceful Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-gracilenta"},
+  {site_number:6, site_name: "Maleny", lat:-26.760438, lon:152.851298, year:2025, total_count:3, species_name: "Litoria gracilenta", common_name: "Graceful Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-gracilenta"},
+  {site_number:5, site_name: "MRBBG", lat:-26.71882, lon:153.023028, year:2025, total_count:2, species_name: "Litoria gracilenta", common_name: "Graceful Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-gracilenta"},
+  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2015, total_count:3, species_name: "Litoria latopalmata", common_name: "Graceful Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-latopalmata"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2016, total_count:6, species_name: "Litoria latopalmata", common_name: "Graceful Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-latopalmata"},
+  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2017, total_count:2, species_name: "Litoria nasuta", common_name: "Striped Rocket Frog", url: "https://www.frogid.net.au/frogs/litoria-nasuta"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2014, total_count:2, species_name: "Litoria olongburensis", common_name: "Wallum Sedge Frog", url: "https://www.frogid.net.au/frogs/litoria-olongburensis"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2015, total_count:13, species_name: "Litoria olongburensis", common_name: "Wallum Sedge Frog", url: "https://www.frogid.net.au/frogs/litoria-olongburensis"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2016, total_count:7, species_name: "Litoria olongburensis", common_name: "Wallum Sedge Frog", url: "https://www.frogid.net.au/frogs/litoria-olongburensis"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2017, total_count:4, species_name: "Litoria olongburensis", common_name: "Wallum Sedge Frog", url: "https://www.frogid.net.au/frogs/litoria-olongburensis"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2018, total_count:2, species_name: "Litoria olongburensis", common_name: "Wallum Sedge Frog", url: "https://www.frogid.net.au/frogs/litoria-olongburensis"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2019, total_count:6, species_name: "Litoria olongburensis", common_name: "Wallum Sedge Frog", url: "https://www.frogid.net.au/frogs/litoria-olongburensis"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2020, total_count:16, species_name: "Litoria olongburensis", common_name: "Wallum Sedge Frog", url: "https://www.frogid.net.au/frogs/litoria-olongburensis"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2020, total_count:5, species_name: "Litoria olongburensis", common_name: "Wallum Sedge Frog", url: "https://www.frogid.net.au/frogs/litoria-olongburensis"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2021, total_count:17, species_name: "Litoria olongburensis", common_name: "Wallum Sedge Frog", url: "https://www.frogid.net.au/frogs/litoria-olongburensis"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2022, total_count:2, species_name: "Litoria olongburensis", common_name: "Wallum Sedge Frog", url: "https://www.frogid.net.au/frogs/litoria-olongburensis"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2023, total_count:34, species_name: "Litoria olongburensis", common_name: "Wallum Sedge Frog", url: "https://www.frogid.net.au/frogs/litoria-olongburensis"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2024, total_count:3, species_name: "Litoria olongburensis", common_name: "Wallum Sedge Frog", url: "https://www.frogid.net.au/frogs/litoria-olongburensis"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2025, total_count:2, species_name: "Litoria olongburensis", common_name: "Wallum Sedge Frog", url: "https://www.frogid.net.au/frogs/litoria-olongburensis"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2019, total_count:2, species_name: "Litoria pearsoniana", common_name: "Pearson's Stream Frog", url: "https://www.frogid.net.au/frogs/litoria-pearsoniana"},
+  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2015, total_count:3, species_name: "Litoria peronii", common_name: "Peron's Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-peronii"},
+  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2016, total_count:3, species_name: "Litoria peronii", common_name: "Peron's Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-peronii"},
+  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2019, total_count:3, species_name: "Litoria peronii", common_name: "Peron's Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-peronii"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2020, total_count:2, species_name: "Litoria peronii", common_name: "Peron's Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-peronii"},
+  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2020, total_count:3, species_name: "Litoria peronii", common_name: "Peron's Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-peronii"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2020, total_count:19, species_name: "Litoria peronii", common_name: "Peron's Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-peronii"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2025, total_count:2, species_name: "Litoria peronii", common_name: "Peron's Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-peronii"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2025, total_count:3, species_name: "Litoria rubella", common_name: "Red Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-rubella"},
+  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2015, total_count:3, species_name: "Litoria tyleri", common_name: "Tyler's Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-tyleri"},
+  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2016, total_count:8, species_name: "Litoria tyleri", common_name: "Tyler's Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-tyleri"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2018, total_count:10, species_name: "Litoria tyleri", common_name: "Tyler's Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-tyleri"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2020, total_count:7, species_name: "Litoria tyleri", common_name: "Tyler's Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-tyleri"},
+  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2020, total_count:2, species_name: "Litoria tyleri", common_name: "Tyler's Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-tyleri"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2020, total_count:19, species_name: "Litoria tyleri", common_name: "Tyler's Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-tyleri"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2021, total_count:39, species_name: "Litoria tyleri", common_name: "Tyler's Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-tyleri"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2022, total_count:43, species_name: "Litoria tyleri", common_name: "Tyler's Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-tyleri"},
+  {site_number:5, site_name: "MRBBG", lat:-26.71882, lon:153.023028, year:2023, total_count:2, species_name: "Litoria tyleri", common_name: "Tyler's Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-tyleri"},
+  {site_number:5, site_name: "MRBBG", lat:-26.71882, lon:153.023028, year:2024, total_count:4, species_name: "Litoria tyleri", common_name: "Tyler's Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-tyleri"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2024, total_count:15, species_name: "Litoria tyleri", common_name: "Tyler's Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-tyleri"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2025, total_count:15, species_name: "Litoria tyleri", common_name: "Tyler's Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-tyleri"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2014, total_count:10, species_name: "Litoria wilcoxii", common_name: "Eastern Stony Creek Frog", url: "https://www.frogid.net.au/frogs/litoria-wilcoxii"},
+  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2015, total_count:24, species_name: "Litoria wilcoxii", common_name: "Eastern Stony Creek Frog", url: "https://www.frogid.net.au/frogs/litoria-wilcoxii"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2016, total_count:3, species_name: "Litoria wilcoxii", common_name: "Eastern Stony Creek Frog", url: "https://www.frogid.net.au/frogs/litoria-wilcoxii"},
+  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2016, total_count:2, species_name: "Litoria wilcoxii", common_name: "Eastern Stony Creek Frog", url: "https://www.frogid.net.au/frogs/litoria-wilcoxii"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2017, total_count:11, species_name: "Litoria wilcoxii", common_name: "Eastern Stony Creek Frog", url: "https://www.frogid.net.au/frogs/litoria-wilcoxii"},
+  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2017, total_count:4, species_name: "Litoria wilcoxii", common_name: "Eastern Stony Creek Frog", url: "https://www.frogid.net.au/frogs/litoria-wilcoxii"},
+  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2017, total_count:3, species_name: "LItoria wilcoxii", common_name: "Eastern Stony Creek Frog", url: "https://www.frogid.net.au/frogs/litoria-wilcoxii"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2018, total_count:8, species_name: "Litoria wilcoxii", common_name: "Eastern Stony Creek Frog", url: "https://www.frogid.net.au/frogs/litoria-wilcoxii"},
+  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2018, total_count:2, species_name: "Litoria wilcoxii", common_name: "Eastern Stony Creek Frog", url: "https://www.frogid.net.au/frogs/litoria-wilcoxii"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2019, total_count:17, species_name: "Litoria wilcoxii", common_name: "Eastern Stony Creek Frog", url: "https://www.frogid.net.au/frogs/litoria-wilcoxii"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2020, total_count:15, species_name: "Litoria wilcoxii", common_name: "Eastern Stony Creek Frog", url: "https://www.frogid.net.au/frogs/litoria-wilcoxii"},
+  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2020, total_count:3, species_name: "Litoria wilcoxii", common_name: "Eastern Stony Creek Frog", url: "https://www.frogid.net.au/frogs/litoria-wilcoxii"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2022, total_count:10, species_name: "Litoria wilcoxii", common_name: "Eastern Stony Creek Frog", url: "https://www.frogid.net.au/frogs/litoria-wilcoxii"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2023, total_count:9, species_name: "Litoria wilcoxii", common_name: "Eastern Stony Creek Frog", url: "https://www.frogid.net.au/frogs/litoria-wilcoxii"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2024, total_count:19, species_name: "Litoria wilcoxii", common_name: "Eastern Stony Creek Frog", url: "https://www.frogid.net.au/frogs/litoria-wilcoxii"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2025, total_count:10, species_name: "Litoria wilcoxii", common_name: "Eastern Stony Creek Frog", url: "https://www.frogid.net.au/frogs/litoria-wilcoxii"},
+  {site_number:6, site_name: "Maleny", lat:-26.760438, lon:152.851298, year:2025, total_count:2, species_name: "Litoria wilcoxii", common_name: "Eastern Stony Creek Frog", url: "https://www.frogid.net.au/frogs/litoria-wilcoxii"},
+  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2015, total_count:2, species_name: "Mixophyes fasciolatus", common_name: "Great Barred Frog", url: "https://www.frogid.net.au/frogs/mixophyes-fasciolatus"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2018, total_count:2, species_name: "Mixophyes fasciolatus", common_name: "Great Barred Frog", url: "https://www.frogid.net.au/frogs/mixophyes-fasciolatus"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2022, total_count:8, species_name: "Mixophyes fasciolatus", common_name: "Great Barred Frog", url: "https://www.frogid.net.au/frogs/mixophyes-fasciolatus"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2023, total_count:3, species_name: "Mixophyes fasciolatus", common_name: "Great Barred Frog", url: "https://www.frogid.net.au/frogs/mixophyes-fasciolatus"},
+  {site_number:5, site_name: "MRBBG", lat:-26.71882, lon:153.023028, year:2023, total_count:6, species_name: "Mixophyes fasciolatus", common_name: "Great Barred Frog", url: "https://www.frogid.net.au/frogs/mixophyes-fasciolatus"},
+  {site_number:5, site_name: "MRBBG", lat:-26.71882, lon:153.023028, year:2023, total_count:2, species_name: "Mixophyes fasciolatus", common_name: "Great Barred Frog", url: "https://www.frogid.net.au/frogs/mixophyes-fasciolatus"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2024, total_count:6, species_name: "Mixophyes fasciolatus", common_name: "Great Barred Frog", url: "https://www.frogid.net.au/frogs/mixophyes-fasciolatus"},
+  {site_number:5, site_name: "MRBBG", lat:-26.71882, lon:153.023028, year:2024, total_count:27, species_name: "Mixophyes fasciolatus", common_name: "Great Barred Frog", url: "https://www.frogid.net.au/frogs/mixophyes-fasciolatus"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2025, total_count:17, species_name: "Mixophyes fasciolatus", common_name: "Great Barred Frog", url: "https://www.frogid.net.au/frogs/mixophyes-fasciolatus"},
+  {site_number:6, site_name: "Maleny", lat:-26.760438, lon:152.851298, year:2025, total_count:81, species_name: "Mixophyes fasciolatus", common_name: "Great Barred Frog", url: "https://www.frogid.net.au/frogs/mixophyes-fasciolatus"},
+  {site_number:5, site_name: "MRBBG", lat:-26.71882, lon:153.023028, year:2025, total_count:9, species_name: "Mixophyes fasciolatus", common_name: "Great Barred Frog", url: "https://www.frogid.net.au/frogs/mixophyes-fasciolatus"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2014, total_count:3, species_name: "Mixophyes iteratus", common_name: "Giant Barred Frog", url: "https://www.frogid.net.au/frogs/mixophyes-iteratus"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2015, total_count:3, species_name: "Mixophyes iteratus", common_name: "Giant Barred Frog", url: "https://www.frogid.net.au/frogs/mixophyes-iteratus"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2016, total_count:12, species_name: "Mixophyes iteratus", common_name: "Giant Barred Frog", url: "https://www.frogid.net.au/frogs/mixophyes-iteratus"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2018, total_count:2, species_name: "Mixophyes iteratus", common_name: "Giant Barred Frog", url: "https://www.frogid.net.au/frogs/mixophyes-iteratus"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2022, total_count:3, species_name: "Mixophyes iteratus", common_name: "Giant Barred Frog", url: "https://www.frogid.net.au/frogs/mixophyes-iteratus"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2023, total_count:4, species_name: "Mixophyes iteratus", common_name: "Giant Barred Frog", url: "https://www.frogid.net.au/frogs/mixophyes-iteratus"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2024, total_count:6, species_name: "Mixophyes iteratus", common_name: "Giant Barred Frog", url: "https://www.frogid.net.au/frogs/mixophyes-iteratus"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2025, total_count:12, species_name: "Mixophyes iteratus", common_name: "Giant Barred Frog", url: "https://www.frogid.net.au/frogs/mixophyes-iteratus"},
+  {site_number:6, site_name: "Maleny", lat:-26.760438, lon:152.851298, year:2025, total_count:46, species_name: "Mixophyes iteratus", common_name: "Giant Barred Frog", url: "https://www.frogid.net.au/frogs/mixophyes-iteratus"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2014, total_count:4, species_name: "Pseudophryne raveni", common_name: "Copper-backed Toadlet", url: "https://www.frogid.net.au/frogs/pseudophryne-raveni"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2015, total_count:4, species_name: "Pseudophryne raveni", common_name: "Copper-backed Toadlet", url: "https://www.frogid.net.au/frogs/pseudophryne-raveni"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2016, total_count:4, species_name: "Pseudophryne raveni", common_name: "Copper-backed Toadlet", url: "https://www.frogid.net.au/frogs/pseudophryne-raveni"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2017, total_count:3, species_name: "Pseudophryne raveni", common_name: "Copper-backed Toadlet", url: "https://www.frogid.net.au/frogs/pseudophryne-raveni"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2018, total_count:5, species_name: "Pseudophryne raveni", common_name: "Copper-backed Toadlet", url: "https://www.frogid.net.au/frogs/pseudophryne-raveni"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2014, total_count:2, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2014, total_count:2, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2014, total_count:5, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
+  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2015, total_count:43, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2016, total_count:2, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
+  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2016, total_count:85, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
+  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2016, total_count:86, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2016, total_count:29, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2017, total_count:4, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
+  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2017, total_count:119, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2017, total_count:23, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2018, total_count:7, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2018, total_count:5, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
+  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2018, total_count:36, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
+  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2018, total_count:116, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2018, total_count:5, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2019, total_count:13, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2019, total_count:4, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
+  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2019, total_count:45, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
+  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2019, total_count:138, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2019, total_count:35, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2020, total_count:48, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
+  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2020, total_count:14, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
+  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2020, total_count:143, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2020, total_count:15, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2021, total_count:14, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
+  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2021, total_count:41, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2021, total_count:35, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2022, total_count:5, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
+  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2022, total_count:19, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2022, total_count:32, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2023, total_count:6, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
+  {site_number:5, site_name: "MRBBG", lat:-26.71882, lon:153.023028, year:2023, total_count:21, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
+  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2023, total_count:21, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2023, total_count:45, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2024, total_count:8, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2024, total_count:2, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
+  {site_number:5, site_name: "MRBBG", lat:-26.71882, lon:153.023028, year:2024, total_count:31, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
+  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2024, total_count:73, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2024, total_count:48, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
+  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2025, total_count:8, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
+  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2025, total_count:6, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
+  {site_number:6, site_name: "Maleny", lat:-26.760438, lon:152.851298, year:2025, total_count:33, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
+  {site_number:5, site_name: "MRBBG", lat:-26.71882, lon:153.023028, year:2025, total_count:11, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2025, total_count:54, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
+  ];
+
+  // =======================
+  // Initialize map
+  // =======================
+  const map = L.map('map').setView([-27.5,153.0], 9);
+
+  const baseLayers = {
+    "Carto Positron": L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: 'Map tiles by CartoDB, &copy; OpenStreetMap contributors',
+        subdomains:'abcd'
+    }),
+    "Esri World Imagery": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution:'Map tiles by Esri, &copy; OpenStreetMap contributors'
+    })
+  };
+  baseLayers["Carto Positron"].addTo(map);
+
+  const markersLayer = L.layerGroup().addTo(map);
+
+  // =======================
+  // Color and radius
+  // =======================
+  function getColor(total) {
+    if(total <= 30) return "#fef0d9";
+    else if(total <= 60) return "#fdcc8a";
+    else if(total <= 90) return "#fc8d59";
+    else if(total <= 120) return "#e34a33";
+    else if(total <= 150) return "#b30000";
+    else return "#7f0000";
+  }
+
+  function getRadius(total) {
+    return Math.sqrt(total)*2;
+  }
+
+  function groupData(data) {
+    const grouped = {};
+    data.forEach(d => {
+      const key = d.site_number + "_" + d.year;
+      if(!grouped[key]) grouped[key] = {lat:d.lat, lon:d.lon, site_name:d.site_name, year:d.year, species:[]};
+      grouped[key].species.push(d);
+    });
+    return Object.values(grouped);
+  }
+
+  // =======================
+  // Initialize bar chart
+  // =======================
+  const ctx = document.getElementById('barChart').getContext('2d');
+  let barChart = new Chart(ctx, {
+    type: 'bar',
+    data: { labels: [], datasets: [{ label:'Total Count', data: [], backgroundColor:[], borderColor:'#000', borderWidth:1 }] },
+    options: {
+      responsive:false,
+      plugins: { legend:{ display:false } },
+      scales: {
+        y: { beginAtZero:true },
+        x: { ticks: { autoSkip:false, maxRotation:45, minRotation:30 } }
+      }
+    }
+  });
+
+  // =======================
+  // Update map markers and bar chart
+  // =======================
+  function updateMarkers(year) {
+    markersLayer.clearLayers();
+    const filtered = surveyData.filter(d=>d.year==year);
+    const grouped = groupData(filtered);
+
+    // Update circle markers
+    grouped.forEach(site => {
+      const totalCount = site.species.reduce((sum,s)=>sum+s.total_count,0);
+
+      let popupHtml = `<b>${site.site_name}</b><br>Year: ${site.year}<br><ul>`;
+      site.species.forEach(s=>{
+        popupHtml += `<li><b>${s.common_name}</b><br><i>${s.species_name}</i><br>Count: ${s.total_count} [<a href="${s.url}" target="_blank">More info</a>]</li>`;
+      });
+      popupHtml += "</ul>";
+
+      const circle = L.circleMarker([site.lat,site.lon],{
+        radius: getRadius(totalCount),
+        fillColor: getColor(totalCount),
+        color: "#000000",
+        weight:2,
+        fillOpacity:0.6
+      }).bindPopup(popupHtml)
+        .bindTooltip(`${site.site_name}: ${totalCount}`, {permanent:false});
+
+      circle.addTo(markersLayer);
+    });
+
+    // =======================
+    // Update bar chart
+    // =======================
+    const labels = grouped.map(s=>s.site_name);
+    const totals = grouped.map(s=>s.species.reduce((sum,s)=>sum+s.total_count,0));
+    const colors = totals.map(t=>getColor(t));
+
+    barChart.data.labels = labels;
+    barChart.data.datasets[0].data = totals;
+    barChart.data.datasets[0].backgroundColor = colors;
+    barChart.update();
+  }
+
+  // =======================
+  // Year slider
+  // =======================
+  const years = [...new Set(surveyData.map(d=>d.year))].sort();
+  let slider = document.getElementById('slider');
+  let yearDisplay = document.getElementById('yearDisplay');
+
+  noUiSlider.create(slider, {
+    start: [years[0]],
+    step: 1,
+    range: {min: years[0], max: years[years.length-1]},
+    format: {to: v => Math.round(v), from: v => Number(v)},
+    connect: [true, false]
+  });
+
+  slider.noUiSlider.on('update', function(values){
+    const year = values[0];
+    yearDisplay.innerHTML = "Year: " + year;
+    updateMarkers(year);
+  });
+
+  // Initialize first year
+  updateMarkers(years[0]);
+
+  // =======================
+  // Legend
+  // =======================
+  const legend = L.control({position:'bottomright'});
+  legend.onAdd = function(map){
+    const div = L.DomUtil.create('div','legend');
+    const grades = [0,30,60,90,120,150,160];
+    const colors = ['#fef0d9','#fdcc8a','#fc8d59','#e34a33','#b30000','#7f0000'];
+    for(let i=0;i<colors.length;i++){
+      div.innerHTML += `<i style="background:${colors[i]}"></i> ${grades[i]}${grades[i+1]? '&ndash;'+grades[i+1]: '+'}<br>`;
+    }
+    return div;
+  };
+  legend.addTo(map);
+
+  // =======================
+  // Layer control
+  // =======================
+  L.control.layers(baseLayers, {"Survey Sites": markersLayer}).addTo(map);
+
+</script>
+</body>
+</html>
