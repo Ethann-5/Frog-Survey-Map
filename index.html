@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8" />
-  <title>Frog Map 23/09</title>
+  <meta charset="utf-8">
+  <title>Interactive Frog Map</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Leaflet CSS & JS -->
+  <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
@@ -16,56 +16,80 @@
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+  <!-- Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
   <style>
-    #map { height: 100vh; }
-    .legend { background:white; line-height:1.5em; padding:6px; border-radius:5px; }
-    .legend i { width:18px; height:18px; float:left; margin-right:8px; opacity:0.7; }
-    #slider { position: absolute; top:10px; left:50%; transform:translateX(-50%); z-index:1000; width:300px; }
-    #yearDisplay { position:absolute; top:50px; left:50%; transform:translateX(-50%); z-index:1000; font-size:16px; font-weight:bold; background:white; padding:4px 8px; border-radius:4px; }
-    #barChartContainer {
-      position:absolute;
-      bottom:10px;
-      left:10px;
-      z-index:1000;
-      width:340px;
-      height:200px;
-      background:white;
-      padding:8px;
-      border-radius:5px;
-    }
-    #toggleContainer {
-      position:absolute;
-      top:90px;
-      left:50%;
-      transform:translateX(-50%);
-      z-index:1000;
-      background:white;
-      padding:4px 8px;
-      border-radius:4px;
-      font-size:14px;
-    }
+    body, button, select, label, div { font-family: "Poppins", sans-serif; margin:0; }
+    #map { height:100vh; }
+    #slider { position:absolute; top:10px; left:50%; transform:translateX(-50%); z-index:1000; width:300px; }
+    #yearDisplay { position:absolute; top:50px; left:50%; transform:translateX(-50%); z-index:1000; background:white; padding:4px 8px; font-weight:bold; border-radius:4px; }
+    #toggleContainer { position:absolute; top:90px; left:50%; transform:translateX(-50%); z-index:1000; background:white; padding:4px 8px; border-radius:4px; }
+    #plotsButton { position:absolute; bottom:10px; left:10px; z-index:1000; background:#ffffff; padding:6px 12px; border-radius:5px; cursor:pointer; border:1px solid #aaa; font-weight:bold; }
+    #plotWindow { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:white; z-index:2000; padding:20px; overflow:auto; }
+    #backButton { background:#0077cc; color:white; padding:8px 14px; border-radius:6px; border:none; cursor:pointer; margin-bottom:12px; font-weight:600; }
+    #siteButtons { margin-bottom:15px; display:flex; flex-wrap:wrap; gap:6px; }
+    .siteBtn { flex:0 0 auto; padding:6px 12px; border-radius:5px; cursor:pointer; border:1px solid #ccc; background:#fff; color:#000; }
+    .siteBtn.selected { color:#fff; }
+    .siteBtn.disabled { opacity:0.4; pointer-events:none; }
+    .legend {
+  background:white;
+  padding:6px 8px;
+  border-radius:5px;
+  line-height:1.4em;
+  font-size:14px;
+  display:flex;
+  flex-direction:column;
+}
+
+.legend-row {
+  display:flex;
+  align-items:center;
+  margin-bottom:2px;
+}
+
+.legend i {
+  width:18px;
+  height:18px;
+  margin-right:6px;
+  flex-shrink:0;
+  border:1px solid #000; 
+}
   </style>
 </head>
 <body>
 
 <div id="map"></div>
-<div id="yearDisplay">Year: 2015</div>
 <div id="slider"></div>
-
+<div id="yearDisplay">Year</div>
 <div id="toggleContainer">
   <label><input type="checkbox" id="removeCaneToad"> Remove Cane Toads?</label>
 </div>
+<div id="plotsButton">📊 Plots</div>
 
-<div id="barChartContainer">
-  <canvas id="barChart"></canvas>
+<!-- Fullscreen plot window -->
+<div id="plotWindow">
+  <button id="backButton">⬅ Back to Map</button>
+  <h2>Species Analysis</h2>
+  <label>Species:</label>
+  <select id="speciesSelect"><option value="">Select species</option></select>
+  <div id="siteButtons"></div>
+  <div id="plotFlexContainer" style="display:flex; width:100%; height:80vh;">
+    <div id="plotContent" style="flex:4;">
+      <canvas id="fullPlot" style="width:100%; height:100%;"></canvas>
+    </div>
+    <div id="extraSpace" style="flex:2; background:white; margin-left:10px; padding:10px;">
+  <div id="speciesInfo" style="text-align:center;">
+    <img id="speciesImage" src="" alt="" style="width:80%; border-radius:8px; display:none; margin-bottom:10px;">
+    <h3 id="speciesCommon" style="margin:5px 0;"></h3>
+    <p id="speciesScientific" style="margin:5px 0; font-style:italic;"></p>
+    <p id="speciesIUCN" style="margin:5px 0; font-weight:bold;"></p>
+  </div>
 </div>
 
+
 <script>
-  // =======================
-  // Hardcoded survey data
-  // =======================
-const surveyData = [
-  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2015, total_count:4, species_name: "Adelotus brevis", common_name: "Tusked Frog", url: "https://www.frogid.net.au/frogs/adelotus-brevis"},
+const surveyData = [  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2015, total_count:4, species_name: "Adelotus brevis", common_name: "Tusked Frog", url: "https://www.frogid.net.au/frogs/adelotus-brevis"},
   {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2016, total_count:4, species_name: "Adelotus brevis", common_name: "Tusked Frog", url: "https://www.frogid.net.au/frogs/adelotus-brevis"},
   {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2017, total_count:2, species_name: "Adelotus brevis", common_name: "Tusked Frog", url: "https://www.frogid.net.au/frogs/adelotus-brevis"},
   {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2018, total_count:2, species_name: "Adelotus brevis", common_name: "Tusked Frog", url: "https://www.frogid.net.au/frogs/adelotus-brevis"},
@@ -119,7 +143,7 @@ const surveyData = [
   {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2025, total_count:2, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
   {site_number:5, site_name: "MRBBG", lat:-26.71882, lon:153.023028, year:2025, total_count:7, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
   {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2025, total_count:5, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2017, total_count:2, species_name: "Limnodynastes terraereginae", common_name: "Superb Banjo Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-terraeregina"},
+  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2017, total_count:2, species_name: "Limnodynastes terraereginae", common_name: "Superb Banjo Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-terraereginae"},
   {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2014, total_count:2, species_name: "Litoria caerulea", common_name: "Green Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-caerulea"},
   {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2014, total_count:3, species_name: "Litoria caerulea", common_name: "Green Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-caerulea"},
   {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2015, total_count:3, species_name: "Litoria caerulea", common_name: "Green Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-caerulea"},
@@ -325,167 +349,426 @@ const surveyData = [
   {site_number:5, site_name: "MRBBG", lat:-26.71882, lon:153.023028, year:2025, total_count:11, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
   {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2025, total_count:54, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
 
-  ];
+  
 
-  // =======================
-  // Initialize map
-  // =======================
-  const map = L.map('map').setView([-26.5, 153.02], 9);
+];
 
-  const baseLayers = {
-    "Carto Positron": L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-        attribution: 'Map tiles by CartoDB, &copy; OpenStreetMap contributors',
-        subdomains:'abcd'
-    }),
-    "Esri World Imagery": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        attribution:'Map tiles by Esri, &copy; OpenStreetMap contributors'
-    })
-  };
-  baseLayers["Carto Positron"].addTo(map);
+// -----------------------
+// Map Setup
+// -----------------------
+const map = L.map('map').setView([-26.5,153.02],12);
+const baseLayers = {
+  "Carto Positron": L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', { attribution: "&copy; OpenStreetMap & Carto", subdomains:"abcd" }),
+  "Esri World Imagery": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution:"&copy; Esri" })
+};
+baseLayers["Carto Positron"].addTo(map);
+const markersLayer = L.layerGroup().addTo(map);
+L.control.layers(baseLayers,{ "Survey Sites": markersLayer }).addTo(map);
 
-  const markersLayer = L.layerGroup().addTo(map);
+// -----------------------
+// Color & Radius
+// -----------------------
+function getColor(total){
+  if(total<=30) return "#fef0d9";
+  if(total<=60) return "#fdcc8a";
+  if(total<=90) return "#fc8d59";
+  if(total<=120) return "#e34a33";
+  if(total<=150) return "#b30000";
+  return "#7f0000";
+}
+function getRadius(total){ return Math.sqrt(total)*2; }
 
-  // =======================
-  // Color and radius
-  // =======================
-  function getColor(total) {
-    if(total <= 30) return "#fef0d9";
-    else if(total <= 60) return "#fdcc8a";
-    else if(total <= 90) return "#fc8d59";
-    else if(total <= 120) return "#e34a33";
-    else if(total <= 150) return "#b30000";
-    else return "#7f0000";
-  }
+function groupData(data){
+  const out={};
+  data.forEach(d=>{
+    const key = d.site_number+"_"+d.year;
+    if(!out[key]){
+      out[key] = { site_number:d.site_number, site_name:d.site_name, lat:d.lat, lon:d.lon, year:d.year, species:[] };
+    }
+    out[key].species.push(d);
+  });
+  return Object.values(out);
+}
 
-  function getRadius(total) {
-    return Math.sqrt(total)*2;
-  }
+// -----------------------
+// Update map markers
+// -----------------------
+function updateMarkers(year){
+  markersLayer.clearLayers();
+  const removeCaneToad = document.getElementById("removeCaneToad").checked;
+  let filtered = surveyData.filter(d=>d.year==year);
+  if(removeCaneToad) filtered = filtered.filter(d=>d.common_name !== "Cane Toad");
+  const grouped = groupData(filtered);
 
-  function groupData(data) {
-    const grouped = {};
-    data.forEach(d => {
-      const key = d.site_number + "_" + d.year;
-      if(!grouped[key]) grouped[key] = {lat:d.lat, lon:d.lon, site_name:d.site_name, year:d.year, species:[]};
-      grouped[key].species.push(d);
+  grouped.forEach(site=>{
+    const total = site.species.reduce((s,v)=>s+v.total_count,0);
+    let popup = `<b>${site.site_name}</b><br>Year: ${site.year}<br><ul>`;
+    site.species.forEach(s=>{
+      popup += `<li><b>${s.common_name}</b><br><i>${s.species_name}</i><br>Count: ${s.total_count} [<a href="${s.url}" target="_blank">More info</a>]</li>`;
     });
-    return Object.values(grouped);
+    popup += "</ul>";
+
+    L.circleMarker([site.lat,site.lon],{
+      radius:getRadius(total),
+      fillColor:getColor(total),
+      color:"#000",
+      weight:2,
+      fillOpacity:0.65
+    }).bindPopup(popup).addTo(markersLayer);
+  });
+}
+
+// -----------------------
+// Year Slider
+// -----------------------
+const years = [...new Set(surveyData.map(d=>d.year))].sort();
+const slider = document.getElementById("slider");
+const yearDisplay = document.getElementById("yearDisplay");
+
+noUiSlider.create(slider,{
+  start:[years[0]],
+  step:1,
+  range:{min:years[0], max:years[years.length-1]},
+  format:{to:v=>Math.round(v), from:v=>Number(v)}
+});
+slider.noUiSlider.on("update", val=>{
+  const y = val[0];
+  yearDisplay.innerHTML = "Year: "+y;
+  updateMarkers(y);
+});
+document.getElementById("removeCaneToad").addEventListener("change",()=>{ updateMarkers(slider.noUiSlider.get()); });
+
+// -----------------------
+// Legend
+// -----------------------
+const legend = L.control({position:"bottomright"});
+legend.onAdd=function(){
+  const div=L.DomUtil.create("div","legend");
+  const grades=[0,30,60,90,120,150];
+  const colors=["#fef0d9","#fdcc8a","#fc8d59","#e34a33","#b30000","#7f0000"];
+  for(let i=0;i<colors.length;i++){
+    const label=(i<colors.length-1)? `${grades[i]}–${grades[i+1]}` : `${grades[i]}+`;
+    const row = document.createElement("div");
+    row.className="legend-row";
+    const colorBox = document.createElement("i");
+    colorBox.style.background=colors[i];
+    row.appendChild(colorBox);
+    const text = document.createTextNode(label);
+    row.appendChild(text);
+    div.appendChild(row);
+  }
+  return div;
+};
+legend.addTo(map);
+
+// -----------------------
+// Plot Window
+// -----------------------
+const plotBtn = document.getElementById("plotsButton");
+const plotWin = document.getElementById("plotWindow");
+const backBtn = document.getElementById("backButton");
+plotBtn.onclick = ()=> plotWin.style.display="block";
+backBtn.onclick = ()=> plotWin.style.display="none";
+
+// Species dropdown
+const speciesSelect = document.getElementById("speciesSelect");
+[...new Set(surveyData.map(d=>d.common_name))].sort().forEach(s=>{
+  speciesSelect.innerHTML += `<option value="${s}">${s}</option>`;
+});
+
+const speciesImage = document.getElementById("speciesImage");
+const speciesCommon = document.getElementById("speciesCommon");
+const speciesScientific = document.getElementById("speciesScientific");
+const speciesIUCN = document.getElementById("speciesIUCN");
+
+
+const speciesMeta = {
+
+  "Cane Toad": {
+    image: "",
+    common: "Cane Toad",
+    scientific: "Rhinella marina",
+    iucn: "Least Concern"
+  },
+  
+ "Copper-backed Toadlet": {
+    image: "",
+    common: "Copper-backed Toadlet",
+    scientific: "Pseudophryne raveni",
+    iucn: "Least Concern",
+  },
+
+"Eastern Dwarf Tree Frog": {
+    image: "https://raw.githubusercontent.com/Ethann-5/Frog_Map_Assets/main/Liroria%20fallax.jpeg",
+    common: "Eastern Dwarf Tree Frog",
+    scientific: "Litoria fallax",
+    iucn: "Least Concern",
+  },
+
+"Eastern Sign-bearing Froglet": {
+    image: "",
+    common: "Eastern Sign-bearing Froglet",
+    scientific: "Crinia parinsignifera",
+    iucn: "Least Concern",
+  },
+
+"Eastern Stony Creek Frog": {
+    image: "",
+    common: "Eastern Stony Creek Frog",
+    scientific: "Litoria wilcoxii",
+    iucn: "Least Concern",
+  },
+
+
+"Giant Barred Frog": {
+    image: "https://raw.githubusercontent.com/Ethann-5/Frog_Map_Assets/main/Giant_Barred.jpeg",
+    common: "Giant Barred Frog",
+    scientific: "Mixophyes iteratus",
+    iucn: "Vulnerable",
+  },
+
+
+"Graceful Tree Frog": {
+    image: "https://raw.githubusercontent.com/Ethann-5/Frog_Map_Assets/main/Litoris%20gracilenta.jpeg",
+    common: "Graceful Tree Frog",
+    scientific: "Litoria gracilenta",
+    iucn: "Least Concern",
+  },
+
+
+"Great Barred Frog": {
+    image: "https://raw.githubusercontent.com/Ethann-5/Frog_Map_Assets/main/Great_Barred.jpeg",
+    common: "Great Barred Frog",
+    scientific: "Mixophyes fasciolatus",
+    iucn: "Least Concern",
+  },
+
+  "Green Tree Frog": {
+    image: "https://raw.githubusercontent.com/Ethann-5/Frog_Map_Assets/main/Green_Tree_Frog.jpeg",
+    common: "Green Tree Frog",
+    scientific: "Litoria caerulea",
+    iucn: "Least Concern",
+  },
+
+
+"Pearson's Stream Frog": {
+    image: "",
+    common: "Pearson's Stream Frog",
+    scientific: "Litoria pearsoniana",
+    iucn: "Least Concern",
+  },
+
+"Peron's Tree Frog": {
+    image: "",
+    common: "Peron's Tree Frog",
+    scientific: "Litoria peronii",
+    iucn: "Least Concern",
+  },
+
+"Red Tree Frog": {
+    image: "",
+    common: "Red Tree Frog",
+    scientific: "Litoria dentata",
+    iucn: "Least Concern",
+  },
+
+
+"Robust Bleating Tree Frog": {
+    image: "",
+    common: "Robust Bleating Tree Frog",
+    scientific: "Litoria rubella",
+    iucn: "Least Concern",
+  },
+
+"Striped Marsh Frog": {
+    image: "",
+    common: "Striped Marsh Frog",
+    scientific: "Limnodynastes peronii",
+    iucn: "Least Concern",
+  },
+
+"Striped Rocket Frog": {
+    image: "",
+    common: "Striped Rocket Frog",
+    scientific: "Litoria nasuta",
+    iucn: "Least Concern",
+  },
+
+"Striped Rocket Frog": {
+    image: "",
+    common: "Striped Rocket Frog",
+    scientific: "Litoria nasuta",
+    iucn: "Least Concern",
+  },
+
+"Superb Banjo Frog": {
+    image: "",
+    common: "Superb Banjo Frog",
+    scientific: "Limnodynastes terraereginae",
+    iucn: "Least Concern",
+  },
+
+"Tusked Frog": {
+    image: "",
+    common: "Tusked Frog",
+    scientific: "Adelotus brevis",
+    iucn: "Least Concern",
+  },
+
+
+"Tyler's Tree Frog": {
+    image: "",
+    common: "Tyler's Tree Frog",
+    scientific: "Litoria tyleri",
+    iucn: "Least Concern",
+  },
+
+"Wallum Froglet": {
+    image: "",
+    common: "Wallum Froglet",
+    scientific: "Crinia tinnula",
+    iucn: "Least Concern",
+  },
+
+"Wallum Rocket Frog": {
+    image: "",
+    common: "Wallum Rocket Frog",
+    scientific: "Litoria freycineti",
+    iucn: "Least Concern",
+  },
+
+"Wallum Sedge Frog": {
+    image: "https://raw.githubusercontent.com/Ethann-5/Frog_Map_Assets/main/Litoria%20olongburensis.jpeg",
+    common: "Wallum Sedge Frog",
+    scientific: "Litoria olongburensis",
+    iucn: "Least Concern",
+  },
+
+
+};
+
+function updateSpeciesInfo() {
+  const sp = speciesSelect.value;
+  
+  if(sp === "Select species") {
+    speciesImage.style.display = "none";
+    speciesCommon.textContent = "";
+    speciesScientific.textContent = "";
+    speciesIUCN.textContent = "";
+    return;
   }
 
-  // =======================
-  // Initialize bar chart
-  // =======================
-  const ctx = document.getElementById('barChart').getContext('2d');
-  let barChart = new Chart(ctx, {
-    type: 'bar',
-    data: { labels: [], datasets: [{ label:'Total Count', data: [], backgroundColor:[], borderColor:'#000', borderWidth:1 }] },
-    options: {
-      responsive:false,
-      plugins: { legend:{ display:false } },
-      scales: {
-        y: { beginAtZero:true },
-        x: { ticks: { autoSkip:false, maxRotation:45, minRotation:30 } }
+  const info = speciesMeta[sp];
+  if(info){
+    speciesImage.src = info.image;
+    speciesImage.style.display = "block";
+    speciesCommon.textContent = info.common;
+    speciesScientific.textContent = info.scientific;
+    speciesIUCN.textContent = `IUCN Status: ${info.iucn}`;
+  }
+}
+
+// Update when dropdown changes
+speciesSelect.addEventListener("change", ()=>{
+  updateFullPlot();
+  updateSpeciesInfo();
+});
+
+// Site buttons
+const siteButtonsDiv = document.getElementById("siteButtons");
+const siteNames = [...new Set(surveyData.map(d=>d.site_name))];
+const siteColors = {};
+const palette = ["#1f77b4","#ff7f0e","#2ca02c","#d62728","#9467bd","#8c564b","#e377c2","#7f7f7f","#bcbd22","#17becf"];
+siteNames.forEach((site,i)=>{
+  siteColors[site]=palette[i%palette.length];
+  const btn = document.createElement("div");
+  btn.className="siteBtn";
+  btn.innerText=site;
+  btn.style.borderColor=siteColors[site];
+  btn.onclick = ()=>{
+    if(btn.classList.contains("disabled")) return;
+    btn.classList.toggle("selected");
+    btn.classList.contains("selected") ? btn.style.background=siteColors[site] : btn.style.background="#fff";
+    updateFullPlot();
+  };
+  siteButtonsDiv.appendChild(btn);
+});
+
+// Chart
+const ctxFull = document.getElementById("fullPlot").getContext("2d");
+let fullChart = new Chart(ctxFull, {
+  type: "bar",
+  data: { labels: [], datasets: [] },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { display: true },
+      tooltip: {
+        enabled: true,        
+        mode: 'nearest',        
+        intersect: true,        
+        callbacks: {
+          label: function(context) {
+            const datasetLabel = context.dataset.label || '';
+            const value = context.raw;  
+            const year = context.label; 
+            return `${datasetLabel} - Year: ${year} | Count: ${value}`;
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        stacked: false,
+        title: { display: true, text: 'Year' }
+      },
+      y: {
+        beginAtZero: true,
+        stacked: false,
+        title: { display: true, text: 'Count' }
       }
     }
-  });
-
-  // =======================
-  // Update map markers and bar chart
-  // =======================
-  function updateMarkers(year) {
-    markersLayer.clearLayers();
-    const removeCaneToad = document.getElementById('removeCaneToad').checked;
-    
-    let filtered = surveyData.filter(d => d.year==year);
-    if(removeCaneToad){
-      filtered = filtered.filter(d => d.common_name !== "Cane Toad");
-    }
-
-    const grouped = groupData(filtered);
-
-    // Update circle markers
-    grouped.forEach(site => {
-      const totalCount = site.species.reduce((sum,s)=>sum+s.total_count,0);
-
-      let popupHtml = `<b>${site.site_name}</b><br>Year: ${site.year}<br><ul>`;
-      site.species.forEach(s=>{
-        popupHtml += `<li><b>${s.common_name}</b><br><i>${s.species_name}</i><br>Count: ${s.total_count} [<a href="${s.url}" target="_blank">More info</a>]</li>`;
-      });
-      popupHtml += "</ul>";
-
-      const circle = L.circleMarker([site.lat,site.lon],{
-        radius: getRadius(totalCount),
-        fillColor: getColor(totalCount),
-        color: "#000000",
-        weight:2,
-        fillOpacity:0.6
-      }).bindPopup(popupHtml)
-        .bindTooltip(`${site.site_name}: ${totalCount}`, {permanent:false});
-
-      circle.addTo(markersLayer);
-    });
-
-    // =======================
-    // Update bar chart
-    // =======================
-    const labels = grouped.map(s=>s.site_name);
-    const totals = grouped.map(s=>s.species.reduce((sum,s)=>sum+s.total_count,0));
-    const colors = totals.map(t=>getColor(t));
-
-    barChart.data.labels = labels;
-    barChart.data.datasets[0].data = totals;
-    barChart.data.datasets[0].backgroundColor = colors;
-    barChart.update();
   }
+});
 
-  // =======================
-  // Year slider
-  // =======================
-  const years = [...new Set(surveyData.map(d=>d.year))].sort();
-  let slider = document.getElementById('slider');
-  let yearDisplay = document.getElementById('yearDisplay');
+function updateFullPlot(){
+  const sp = speciesSelect.value;
+  const selectedSites = Array.from(siteButtonsDiv.querySelectorAll(".siteBtn.selected")).map(d=>d.innerText);
 
-  noUiSlider.create(slider, {
-    start: [years[0]],
-    step: 1,
-    range: {min: years[0], max: years[years.length-1]},
-    format: {to: v => Math.round(v), from: v => Number(v)},
-    connect: [true, false]
-  });
 
-  slider.noUiSlider.on('update', function(values){
-    const year = values[0];
-    yearDisplay.innerHTML = "Year: " + year;
-    updateMarkers(year);
-  });
-
-  // Update map when the Cane Toad toggle is changed
-  document.getElementById('removeCaneToad').addEventListener('change', () => {
-    const currentYear = slider.noUiSlider.get();
-    updateMarkers(currentYear);
-  });
-
-  // Initialize first year
-  updateMarkers(years[0]);
-
-  // =======================
-  // Legend
-  // =======================
-  const legend = L.control({position:'bottomright'});
-  legend.onAdd = function(map){
-    const div = L.DomUtil.create('div','legend');
-    const grades = [0,30,60,90,120,150,160];
-    const colors = ['#fef0d9','#fdcc8a','#fc8d59','#e34a33','#b30000','#7f0000'];
-    for(let i=0;i<colors.length;i++){
-      div.innerHTML += `<i style="background:${colors[i]}"></i> ${grades[i]}${grades[i+1]? '&ndash;'+grades[i+1]: '+'}<br>`;
+  siteButtonsDiv.querySelectorAll(".siteBtn").forEach(btn=>{
+    const site = btn.innerText;
+    const hasData = surveyData.some(d=>d.common_name===sp && d.site_name===site);
+    if(sp && !hasData){
+      btn.classList.add("disabled");
+      btn.classList.remove("selected");
+      btn.style.background="#fff";
+    } else {
+      btn.classList.remove("disabled");
     }
-    return div;
-  };
-  legend.addTo(map);
+  });
 
-  // =======================
-  // Layer control
-  // =======================
-  L.control.layers(baseLayers, {"Survey Sites": markersLayer}).addTo(map);
+  const years = [...new Set(surveyData.map(d=>d.year))].sort();
+  const datasets = [];
+
+  selectedSites.forEach(site=>{
+    const data = years.map(y=>{
+      return surveyData
+        .filter(d=>d.site_name===site && d.common_name===sp && d.year===y)
+        .reduce((sum,v)=>sum+v.total_count,0);
+    });
+    datasets.push({label:site,data:data,backgroundColor:siteColors[site],borderColor:"#000",borderWidth:1});
+  });
+
+  fullChart.data.labels=years;
+  fullChart.data.datasets=datasets;
+  fullChart.update();
+}
+
+speciesSelect.onchange = updateFullPlot;
 
 </script>
-</body
+</body>
+</html>
+
+
