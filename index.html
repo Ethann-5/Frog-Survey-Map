@@ -28,33 +28,30 @@
     #plotsButton { position:absolute; bottom:10px; left:10px; z-index:1000; background:#ffffff; padding:6px 12px; border-radius:5px; cursor:pointer; border:1px solid #aaa; font-weight:bold; }
     #plotWindow { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:white; z-index:2000; padding:20px; overflow:auto; }
     #backButton { background:#0077cc; color:white; padding:8px 14px; border-radius:6px; border:none; cursor:pointer; margin-bottom:12px; font-weight:600; }
-    #siteButtons { margin-bottom:15px; display:flex; flex-wrap:wrap; gap:6px; }
+    #siteButtons { margin-bottom:15px; display:flex; flex-wrap:wrap; gap:6px; align-items:flex-start; }
+    .siteWrap { display:flex; flex-direction:column; align-items:flex-start; }
     .siteBtn { flex:0 0 auto; padding:6px 12px; border-radius:5px; cursor:pointer; border:1px solid #ccc; background:#fff; color:#000; }
     .siteBtn.selected { color:#fff; }
     .siteBtn.disabled { opacity:0.4; pointer-events:none; }
+    .siteYears { font-size:12px; color:#444; margin-top:2px; margin-left:4px; }
     .legend {
-  background:white;
-  padding:6px 8px;
-  border-radius:5px;
-  line-height:1.4em;
-  font-size:14px;
-  display:flex;
-  flex-direction:column;
-}
-
-.legend-row {
-  display:flex;
-  align-items:center;
-  margin-bottom:2px;
-}
-
-.legend i {
-  width:18px;
-  height:18px;
-  margin-right:6px;
-  flex-shrink:0;
-  border:1px solid #000; 
-}
+      background:white;
+      padding:6px 8px;
+      border-radius:5px;
+      line-height:1.4em;
+      font-size:14px;
+      display:flex;
+      flex-direction:column;
+    }
+    .legend-row { display:flex; align-items:center; margin-bottom:2px; }
+    .legend i { width:18px; height:18px; margin-right:6px; flex-shrink:0; border:1px solid #000; }
+    /* Plot flex layout */
+    #plotFlexContainer { display:flex; width:100%; height:80vh; gap:10px; }
+    #plotContent { flex:4; }
+    #extraSpace { flex:2; background:white; margin-left:10px; padding:10px; display:flex; flex-direction:column; align-items:center; }
+    #speciesInfo img { width:80%; border-radius:8px; display:none; margin-bottom:6px; }
+    #speciesCredit { font-size:12px; color:#333; margin-top:6px; }
+    canvas { width:100%; height:100%; }
   </style>
 </head>
 <body>
@@ -62,33 +59,42 @@
 <div id="map"></div>
 <div id="slider"></div>
 <div id="yearDisplay">Year</div>
-<div id="toggleContainer">
-  <label><input type="checkbox" id="removeCaneToad"> Remove Cane Toads?</label>
-</div>
+<div id="toggleContainer"><label><input type="checkbox" id="removeCaneToad"> Remove Cane Toads?</label></div>
 <div id="plotsButton">📊 Plots</div>
 
 <!-- Fullscreen plot window -->
 <div id="plotWindow">
   <button id="backButton">⬅ Back to Map</button>
   <h2>Species Analysis</h2>
+
   <label>Species:</label>
   <select id="speciesSelect"><option value="">Select species</option></select>
+
   <div id="siteButtons"></div>
-  <div id="plotFlexContainer" style="display:flex; width:100%; height:80vh;">
-    <div id="plotContent" style="flex:4;">
-      <canvas id="fullPlot" style="width:100%; height:100%;"></canvas>
+
+  <div id="plotFlexContainer">
+    <div id="plotContent">
+      <canvas id="fullPlot"></canvas>
     </div>
-    <div id="extraSpace" style="flex:2; background:white; margin-left:10px; padding:10px;">
-  <div id="speciesInfo" style="text-align:center;">
-    <img id="speciesImage" src="" alt="" style="width:80%; border-radius:8px; display:none; margin-bottom:10px;">
-    <h3 id="speciesCommon" style="margin:5px 0;"></h3>
-    <p id="speciesScientific" style="margin:5px 0; font-style:italic;"></p>
-    <p id="speciesIUCN" style="margin:5px 0; font-weight:bold;"></p>
+
+    <div id="extraSpace">
+      <div id="speciesInfo" style=style="display:flex; flex-direction:column; align-items:right; text-align:right;">
+        <img id="speciesImage" src="" alt="" style="width:80%; max-width:250px; border-radius:8px; display:none;">
+        <h3 id="speciesCommon" style="margin:5px 0;"></h3>
+        <p id="speciesScientific" style="margin:5px 0; font-style:italic;"></p>
+        <p id="speciesIUCN" style="margin:5px 0; font-weight:bold;"></p>
+        <div id="speciesCredit" style="margin-top:6px;"></div>
+	<div id="speciesDescription" style="margin-top:10px;"></div>
+      </div>
+    </div>
   </div>
 </div>
 
-
 <script>
+
+
+
+
 const surveyData = [  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2015, total_count:4, species_name: "Adelotus brevis", common_name: "Tusked Frog", url: "https://www.frogid.net.au/frogs/adelotus-brevis"},
   {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2016, total_count:4, species_name: "Adelotus brevis", common_name: "Tusked Frog", url: "https://www.frogid.net.au/frogs/adelotus-brevis"},
   {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2017, total_count:2, species_name: "Adelotus brevis", common_name: "Tusked Frog", url: "https://www.frogid.net.au/frogs/adelotus-brevis"},
@@ -349,25 +355,21 @@ const surveyData = [  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:
   {site_number:5, site_name: "MRBBG", lat:-26.71882, lon:153.023028, year:2025, total_count:11, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
   {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2025, total_count:54, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
 
-  
-
 ];
 
-// -----------------------
-// Map Setup
-// -----------------------
-const map = L.map('map').setView([-26.5,153.02],12);
+/* -----------------------
+   Map
+------------------------*/
+const map = L.map('map').setView([-26.5,153.02],11);
 const baseLayers = {
-  "Carto Positron": L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', { attribution: "&copy; OpenStreetMap & Carto", subdomains:"abcd" }),
-  "Esri World Imagery": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution:"&copy; Esri" })
+"Esri World Imagery": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution:"&copy; Esri" }),
+  "Carto Positron": L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', { attribution: "&copy; OpenStreetMap & Carto", subdomains:"abcd" })
+  
 };
-baseLayers["Carto Positron"].addTo(map);
+baseLayers["Esri World Imagery"].addTo(map);
 const markersLayer = L.layerGroup().addTo(map);
 L.control.layers(baseLayers,{ "Survey Sites": markersLayer }).addTo(map);
 
-// -----------------------
-// Color & Radius
-// -----------------------
 function getColor(total){
   if(total<=30) return "#fef0d9";
   if(total<=60) return "#fdcc8a";
@@ -377,37 +379,28 @@ function getColor(total){
   return "#7f0000";
 }
 function getRadius(total){ return Math.sqrt(total)*2; }
-
 function groupData(data){
   const out={};
   data.forEach(d=>{
     const key = d.site_number+"_"+d.year;
-    if(!out[key]){
-      out[key] = { site_number:d.site_number, site_name:d.site_name, lat:d.lat, lon:d.lon, year:d.year, species:[] };
-    }
+    if(!out[key]) out[key]={site_number:d.site_number, site_name:d.site_name, lat:d.lat, lon:d.lon, year:d.year, species:[]};
     out[key].species.push(d);
   });
   return Object.values(out);
 }
-
-// -----------------------
-// Update map markers
-// -----------------------
 function updateMarkers(year){
   markersLayer.clearLayers();
   const removeCaneToad = document.getElementById("removeCaneToad").checked;
   let filtered = surveyData.filter(d=>d.year==year);
   if(removeCaneToad) filtered = filtered.filter(d=>d.common_name !== "Cane Toad");
   const grouped = groupData(filtered);
-
   grouped.forEach(site=>{
     const total = site.species.reduce((s,v)=>s+v.total_count,0);
     let popup = `<b>${site.site_name}</b><br>Year: ${site.year}<br><ul>`;
     site.species.forEach(s=>{
       popup += `<li><b>${s.common_name}</b><br><i>${s.species_name}</i><br>Count: ${s.total_count} [<a href="${s.url}" target="_blank">More info</a>]</li>`;
     });
-    popup += "</ul>";
-
+    popup += `</ul>`;
     L.circleMarker([site.lat,site.lon],{
       radius:getRadius(total),
       fillColor:getColor(total),
@@ -418,74 +411,54 @@ function updateMarkers(year){
   });
 }
 
-// -----------------------
-// Year Slider
-// -----------------------
-const years = [...new Set(surveyData.map(d=>d.year))].sort();
+/* -----------------------
+   Slider
+------------------------*/
+const years = surveyData.length ? [...new Set(surveyData.map(d=>d.year))].sort() : [];
 const slider = document.getElementById("slider");
 const yearDisplay = document.getElementById("yearDisplay");
+if(years.length){
+  noUiSlider.create(slider,{ start:[years[0]], step:1, range:{min:years[0], max:years[years.length-1]}, format:{to:v=>Math.round(v), from:v=>Number(v)} });
+  slider.noUiSlider.on("update", val=>{ const y = val[0]; yearDisplay.innerHTML = "Year: "+y; updateMarkers(y); });
+  document.getElementById("removeCaneToad").addEventListener("change",()=>{ updateMarkers(slider.noUiSlider.get()); });
+  updateMarkers(years[0]);
+} else {
+  // no data
+  yearDisplay.innerText = "Year";
+}
 
-noUiSlider.create(slider,{
-  start:[years[0]],
-  step:1,
-  range:{min:years[0], max:years[years.length-1]},
-  format:{to:v=>Math.round(v), from:v=>Number(v)}
-});
-slider.noUiSlider.on("update", val=>{
-  const y = val[0];
-  yearDisplay.innerHTML = "Year: "+y;
-  updateMarkers(y);
-});
-document.getElementById("removeCaneToad").addEventListener("change",()=>{ updateMarkers(slider.noUiSlider.get()); });
-
-// -----------------------
-// Legend
-// -----------------------
+/* -----------------------
+   Legend 
+------------------------*/
 const legend = L.control({position:"bottomright"});
 legend.onAdd=function(){
-  const div=L.DomUtil.create("div","legend");
+  const div = L.DomUtil.create("div","legend");
   const grades=[0,30,60,90,120,150];
   const colors=["#fef0d9","#fdcc8a","#fc8d59","#e34a33","#b30000","#7f0000"];
   for(let i=0;i<colors.length;i++){
-    const label=(i<colors.length-1)? `${grades[i]}–${grades[i+1]}` : `${grades[i]}+`;
-    const row = document.createElement("div");
-    row.className="legend-row";
-    const colorBox = document.createElement("i");
-    colorBox.style.background=colors[i];
-    row.appendChild(colorBox);
-    const text = document.createTextNode(label);
-    row.appendChild(text);
-    div.appendChild(row);
+    const label = (i<colors.length-1)? `${grades[i]}–${grades[i+1]}` : `${grades[i]}+`;
+    const row = document.createElement("div"); row.className="legend-row";
+    const box = document.createElement("i"); box.style.background = colors[i];
+    row.appendChild(box); row.appendChild(document.createTextNode(label)); div.appendChild(row);
   }
   return div;
 };
 legend.addTo(map);
 
-// -----------------------
-// Plot Window
-// -----------------------
+/* -----------------------
+   Plot UI wiring
+------------------------*/
 const plotBtn = document.getElementById("plotsButton");
 const plotWin = document.getElementById("plotWindow");
 const backBtn = document.getElementById("backButton");
 plotBtn.onclick = ()=> plotWin.style.display="block";
 backBtn.onclick = ()=> plotWin.style.display="none";
 
-// Species dropdown
-const speciesSelect = document.getElementById("speciesSelect");
-[...new Set(surveyData.map(d=>d.common_name))].sort().forEach(s=>{
-  speciesSelect.innerHTML += `<option value="${s}">${s}</option>`;
-});
-
-const speciesImage = document.getElementById("speciesImage");
-const speciesCommon = document.getElementById("speciesCommon");
-const speciesScientific = document.getElementById("speciesScientific");
-const speciesIUCN = document.getElementById("speciesIUCN");
-
-
+/species metadata/
 const speciesMeta = {
-
-  "Cane Toad": {
+ "Cane Toad": {
     image: "",
+    credit: "",	
     common: "Cane Toad",
     scientific: "Rhinella marina",
     iucn: "Least Concern"
@@ -493,6 +466,7 @@ const speciesMeta = {
   
  "Copper-backed Toadlet": {
     image: "",
+	credit: "",
     common: "Copper-backed Toadlet",
     scientific: "Pseudophryne raveni",
     iucn: "Least Concern",
@@ -500,6 +474,7 @@ const speciesMeta = {
 
 "Eastern Dwarf Tree Frog": {
     image: "https://raw.githubusercontent.com/Ethann-5/Frog_Map_Assets/main/Liroria%20fallax.jpeg",
+	credit: "",
     common: "Eastern Dwarf Tree Frog",
     scientific: "Litoria fallax",
     iucn: "Least Concern",
@@ -507,6 +482,7 @@ const speciesMeta = {
 
 "Eastern Sign-bearing Froglet": {
     image: "",
+credit: "",
     common: "Eastern Sign-bearing Froglet",
     scientific: "Crinia parinsignifera",
     iucn: "Least Concern",
@@ -514,6 +490,7 @@ const speciesMeta = {
 
 "Eastern Stony Creek Frog": {
     image: "",
+credit: "",
     common: "Eastern Stony Creek Frog",
     scientific: "Litoria wilcoxii",
     iucn: "Least Concern",
@@ -522,6 +499,7 @@ const speciesMeta = {
 
 "Giant Barred Frog": {
     image: "https://raw.githubusercontent.com/Ethann-5/Frog_Map_Assets/main/Giant_Barred.jpeg",
+credit: "Cameron Taggart",
     common: "Giant Barred Frog",
     scientific: "Mixophyes iteratus",
     iucn: "Vulnerable",
@@ -530,6 +508,7 @@ const speciesMeta = {
 
 "Graceful Tree Frog": {
     image: "https://raw.githubusercontent.com/Ethann-5/Frog_Map_Assets/main/Litoris%20gracilenta.jpeg",
+credit: "Cameron Taggart",
     common: "Graceful Tree Frog",
     scientific: "Litoria gracilenta",
     iucn: "Least Concern",
@@ -538,6 +517,7 @@ const speciesMeta = {
 
 "Great Barred Frog": {
     image: "https://raw.githubusercontent.com/Ethann-5/Frog_Map_Assets/main/Great_Barred.jpeg",
+credit: "Cameron Taggart",
     common: "Great Barred Frog",
     scientific: "Mixophyes fasciolatus",
     iucn: "Least Concern",
@@ -545,6 +525,7 @@ const speciesMeta = {
 
   "Green Tree Frog": {
     image: "https://raw.githubusercontent.com/Ethann-5/Frog_Map_Assets/main/Green_Tree_Frog.jpeg",
+credit: "Cameron Taggart",
     common: "Green Tree Frog",
     scientific: "Litoria caerulea",
     iucn: "Least Concern",
@@ -553,13 +534,15 @@ const speciesMeta = {
 
 "Pearson's Stream Frog": {
     image: "",
+credit: "",
     common: "Pearson's Stream Frog",
     scientific: "Litoria pearsoniana",
     iucn: "Least Concern",
   },
 
 "Peron's Tree Frog": {
-    image: "",
+    image: "https://raw.githubusercontent.com/Ethann-5/Frog_Map_Assets/main/peronii.jpeg",
+credit: "Jono Hooper",
     common: "Peron's Tree Frog",
     scientific: "Litoria peronii",
     iucn: "Least Concern",
@@ -567,6 +550,7 @@ const speciesMeta = {
 
 "Red Tree Frog": {
     image: "",
+credit: "",
     common: "Red Tree Frog",
     scientific: "Litoria dentata",
     iucn: "Least Concern",
@@ -575,6 +559,7 @@ const speciesMeta = {
 
 "Robust Bleating Tree Frog": {
     image: "",
+credit: "",
     common: "Robust Bleating Tree Frog",
     scientific: "Litoria rubella",
     iucn: "Least Concern",
@@ -582,6 +567,7 @@ const speciesMeta = {
 
 "Striped Marsh Frog": {
     image: "",
+credit: "",
     common: "Striped Marsh Frog",
     scientific: "Limnodynastes peronii",
     iucn: "Least Concern",
@@ -589,6 +575,7 @@ const speciesMeta = {
 
 "Striped Rocket Frog": {
     image: "",
+credit: "",
     common: "Striped Rocket Frog",
     scientific: "Litoria nasuta",
     iucn: "Least Concern",
@@ -596,6 +583,7 @@ const speciesMeta = {
 
 "Striped Rocket Frog": {
     image: "",
+credit: "",
     common: "Striped Rocket Frog",
     scientific: "Litoria nasuta",
     iucn: "Least Concern",
@@ -603,6 +591,7 @@ const speciesMeta = {
 
 "Superb Banjo Frog": {
     image: "",
+credit: "",
     common: "Superb Banjo Frog",
     scientific: "Limnodynastes terraereginae",
     iucn: "Least Concern",
@@ -610,6 +599,7 @@ const speciesMeta = {
 
 "Tusked Frog": {
     image: "",
+credit: "",
     common: "Tusked Frog",
     scientific: "Adelotus brevis",
     iucn: "Least Concern",
@@ -617,7 +607,8 @@ const speciesMeta = {
 
 
 "Tyler's Tree Frog": {
-    image: "",
+    image: "https://raw.githubusercontent.com/Ethann-5/Frog_Map_Assets/main/tylers laughing.jpeg",
+credit: "Emily Thompson ",
     common: "Tyler's Tree Frog",
     scientific: "Litoria tyleri",
     iucn: "Least Concern",
@@ -625,6 +616,7 @@ const speciesMeta = {
 
 "Wallum Froglet": {
     image: "",
+credit: "",
     common: "Wallum Froglet",
     scientific: "Crinia tinnula",
     iucn: "Least Concern",
@@ -632,6 +624,7 @@ const speciesMeta = {
 
 "Wallum Rocket Frog": {
     image: "",
+credit: "",
     common: "Wallum Rocket Frog",
     scientific: "Litoria freycineti",
     iucn: "Least Concern",
@@ -639,6 +632,7 @@ const speciesMeta = {
 
 "Wallum Sedge Frog": {
     image: "https://raw.githubusercontent.com/Ethann-5/Frog_Map_Assets/main/Litoria%20olongburensis.jpeg",
+credit: "Indra Bone",
     common: "Wallum Sedge Frog",
     scientific: "Litoria olongburensis",
     iucn: "Least Concern",
@@ -647,71 +641,82 @@ const speciesMeta = {
 
 };
 
-function updateSpeciesInfo() {
-  const sp = speciesSelect.value;
-  
-  if(sp === "Select species") {
-    speciesImage.style.display = "none";
-    speciesCommon.textContent = "";
-    speciesScientific.textContent = "";
-    speciesIUCN.textContent = "";
-    return;
-  }
 
-  const info = speciesMeta[sp];
-  if(info){
-    speciesImage.src = info.image;
-    speciesImage.style.display = "block";
-    speciesCommon.textContent = info.common;
-    speciesScientific.textContent = info.scientific;
-    speciesIUCN.textContent = `IUCN Status: ${info.iucn}`;
-  }
-}
-
-// Update when dropdown changes
-speciesSelect.addEventListener("change", ()=>{
-  updateFullPlot();
-  updateSpeciesInfo();
+const speciesSelect = document.getElementById("speciesSelect");
+speciesSelect.innerHTML = '<option value="ALL">All species</option>'; 
+[...new Set(surveyData.map(d => d.common_name))].sort().forEach(s => {
+  speciesSelect.innerHTML += `<option value="${s}">${s}</option>`;
 });
 
-// Site buttons
 const siteButtonsDiv = document.getElementById("siteButtons");
-const siteNames = [...new Set(surveyData.map(d=>d.site_name))];
+const speciesImage = document.getElementById("speciesImage");
+const speciesCommon = document.getElementById("speciesCommon");
+const speciesScientific = document.getElementById("speciesScientific");
+const speciesIUCN = document.getElementById("speciesIUCN");
+const speciesCredit = document.getElementById("speciesCredit");
+
+
+function populateSpeciesDropdown(){
+  const species = [...new Set(surveyData.map(d=>d.common_name))].sort();
+  speciesSelect.innerHTML = `<option value="">Select species</option><option value="ALL">All Species</option>`;
+  species.forEach(s => speciesSelect.innerHTML += `<option value="${s}">${s}</option>`);
+}
+populateSpeciesDropdown();
+
+
+const siteYearMap = {};
+[...new Set(surveyData.map(d=>d.site_name))].forEach(site=>{
+  const yrs = [...new Set(surveyData.filter(d=>d.site_name===site).map(r=>r.year))].sort();
+  siteYearMap[site] = yrs;
+});
+
+
+const siteNames = [...new Set(surveyData.map(d=>d.site_name))].sort();
 const siteColors = {};
 const palette = ["#1f77b4","#ff7f0e","#2ca02c","#d62728","#9467bd","#8c564b","#e377c2","#7f7f7f","#bcbd22","#17becf"];
 siteNames.forEach((site,i)=>{
-  siteColors[site]=palette[i%palette.length];
+  siteColors[site] = palette[i % palette.length];
+  const wrap = document.createElement("div");
+  wrap.className = "siteWrap";
   const btn = document.createElement("div");
-  btn.className="siteBtn";
-  btn.innerText=site;
-  btn.style.borderColor=siteColors[site];
+  btn.className = "siteBtn";
+  btn.textContent = site;
+  btn.style.borderColor = siteColors[site];
   btn.onclick = ()=>{
     if(btn.classList.contains("disabled")) return;
     btn.classList.toggle("selected");
-    btn.classList.contains("selected") ? btn.style.background=siteColors[site] : btn.style.background="#fff";
+    btn.classList.contains("selected") ? btn.style.background = siteColors[site] : btn.style.background = "#fff";
     updateFullPlot();
   };
-  siteButtonsDiv.appendChild(btn);
+  const yrs = siteYearMap[site] || [];
+  const yrText = yrs.length ? (yrs.length===1 ? `${yrs[0]}` : `${Math.min(...yrs)}–${Math.max(...yrs)}`) : "";
+  const yrsElem = document.createElement("div");
+  yrsElem.className = "siteYears";
+  yrsElem.textContent = yrText;
+  wrap.appendChild(btn);
+  wrap.appendChild(yrsElem);
+  siteButtonsDiv.appendChild(wrap);
 });
 
-// Chart
+
 const ctxFull = document.getElementById("fullPlot").getContext("2d");
 let fullChart = new Chart(ctxFull, {
   type: "bar",
   data: { labels: [], datasets: [] },
   options: {
     responsive: true,
+    maintainAspectRatio: false,
     plugins: {
       legend: { display: true },
       tooltip: {
-        enabled: true,        
-        mode: 'nearest',        
-        intersect: true,        
+        enabled: true,
+        mode: 'nearest',
+        intersect: true,
         callbacks: {
           label: function(context) {
             const datasetLabel = context.dataset.label || '';
-            const value = context.raw;  
-            const year = context.label; 
+            const value = context.raw;
+            const year = context.label;
             return `${datasetLabel} - Year: ${year} | Count: ${value}`;
           }
         }
@@ -720,55 +725,114 @@ let fullChart = new Chart(ctxFull, {
     scales: {
       x: {
         stacked: false,
-        title: { display: true, text: 'Year' }
+        title: { display: true, text: 'Year' },
+        grid: { drawTicks:true, color: 'black', tickLength: 4, drawOnChartArea:false }
       },
-      y: {
-        beginAtZero: true,
-        stacked: false,
-        title: { display: true, text: 'Count' }
-      }
+      y: { beginAtZero: true, title: { display:true, text: 'Count' } }
     }
   }
 });
 
+
+function updateSpeciesInfo(){
+  const sp = speciesSelect.value;
+
+ 
+  if(sp === "ALL"){
+    speciesImage.style.display = "none";
+    speciesCommon.textContent = "Frogs of the Region";
+    speciesScientific.textContent = "";
+    speciesIUCN.textContent = "";
+    speciesCredit.textContent = "";
+    
+   
+    const description = document.getElementById("speciesDescription");
+    if(description){
+      description.innerHTML = `
+        Queensland is home to many species of frog, all of which play critical ecological roles within their ecosystems, including insect control, acting as prey for many native animals and indicating an area's overall health. Use the graph to visualise Ecollaboration's frog surveying efforts over the years.
+      `;
+    }
+    return;
+  }
+
+  // Individual species selected
+  const meta = speciesMeta[sp];
+
+  // Image handling and alignment
+  if(meta && meta.image){
+    speciesImage.src = meta.image;
+    speciesImage.style.display = "block";
+    speciesImage.style.objectFit = "cover"; 
+    speciesImage.style.width = "100%";
+    speciesImage.style.maxWidth = "260px";
+    speciesImage.style.height = "200px";    
+    speciesImage.style.borderRadius = "10px";
+  } else {
+    speciesImage.style.display = "none";
+    speciesImage.src = "";
+  }
+
+
+  speciesCommon.textContent = meta ? meta.common || sp : sp;
+  speciesScientific.textContent = meta ? meta.scientific || "" : "";
+  speciesIUCN.textContent = meta ? `IUCN: ${meta.iucn || "Unknown"}` : "";
+  speciesCredit.textContent = meta && meta.credit ? `📷 Photo: ${meta.credit}` : "";
+
+
+  const description = document.getElementById("speciesDescription");
+  if(description) description.innerHTML = "";
+}
+
+
 function updateFullPlot(){
   const sp = speciesSelect.value;
-  const selectedSites = Array.from(siteButtonsDiv.querySelectorAll(".siteBtn.selected")).map(d=>d.innerText);
+  const allSiteBtns = Array.from(document.querySelectorAll(".siteBtn"));
 
-
-  siteButtonsDiv.querySelectorAll(".siteBtn").forEach(btn=>{
-    const site = btn.innerText;
-    const hasData = surveyData.some(d=>d.common_name===sp && d.site_name===site);
-    if(sp && !hasData){
-      btn.classList.add("disabled");
-      btn.classList.remove("selected");
-      btn.style.background="#fff";
+ 
+  allSiteBtns.forEach(btn=>{
+    const site = btn.textContent;
+    if(sp && sp !== "ALL"){
+      const hasData = surveyData.some(d=>d.site_name===site && d.common_name===sp);
+      if(!hasData){
+        btn.classList.add("disabled");
+        btn.classList.remove("selected");
+        btn.style.background="#fff";
+      } else {
+        btn.classList.remove("disabled");
+      }
     } else {
+
       btn.classList.remove("disabled");
     }
   });
 
+  const selectedSites = allSiteBtns.filter(b=>b.classList.contains("selected")).map(b=>b.textContent);
+
   const years = [...new Set(surveyData.map(d=>d.year))].sort();
   const datasets = [];
 
-  selectedSites.forEach(site=>{
+  allSiteBtns.filter(b=>b.classList.contains("selected")).forEach(siteBtn=>{
+    const site = siteBtn.textContent;
     const data = years.map(y=>{
-      return surveyData
-        .filter(d=>d.site_name===site && d.common_name===sp && d.year===y)
-        .reduce((sum,v)=>sum+v.total_count,0);
+      if(sp==="ALL"){
+        return surveyData.filter(d=>d.site_name===site && d.year===y).reduce((sum,v)=>sum+v.total_count,0);
+      } else {
+        return surveyData.filter(d=>d.site_name===site && d.common_name===sp && d.year===y).reduce((sum,v)=>sum+v.total_count,0);
+      }
     });
-    datasets.push({label:site,data:data,backgroundColor:siteColors[site],borderColor:"#000",borderWidth:1});
+    datasets.push({label:site, data:data, backgroundColor:siteColors[site], borderColor:"#000", borderWidth:1});
   });
 
-  fullChart.data.labels=years;
-  fullChart.data.datasets=datasets;
+  fullChart.data.labels = years;
+  fullChart.data.datasets = datasets;
   fullChart.update();
 }
 
-speciesSelect.onchange = updateFullPlot;
+speciesSelect.addEventListener("change", ()=>{
+  updateFullPlot();
+  updateSpeciesInfo();
+});
 
 </script>
 </body>
 </html>
-
-
