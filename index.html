@@ -19,6 +19,8 @@
   <!-- Font -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
 
+
+  <!-- Map set up -->	
   <style>
     body, button, select, label, div { font-family: "Poppins", sans-serif; margin:0; }
     #map { height:100vh; }
@@ -45,7 +47,8 @@
     }
     .legend-row { display:flex; align-items:center; margin-bottom:2px; }
     .legend i { width:18px; height:18px; margin-right:6px; flex-shrink:0; border:1px solid #000; }
-    /* Plot flex layout */
+    
+/* Plot set up */
     #plotFlexContainer { display:flex; width:100%; height:80vh; gap:10px; }
     #plotContent { flex:4; }
     #extraSpace { flex:2; background:white; margin-left:10px; padding:10px; display:flex; flex-direction:column; align-items:center; }
@@ -56,6 +59,7 @@
 </head>
 <body>
 
+<!-- Features, map, slider, year, cane toad remover, plot -->
 <div id="map"></div>
 <div id="slider"></div>
 <div id="yearDisplay">Year</div>
@@ -77,7 +81,8 @@
       <canvas id="fullPlot"></canvas>
     </div>
 
-    <div id="extraSpace">
+ <!-- Space to the roght of the plot-->
+	  <div id="extraSpace">
       <div id="speciesInfo" style=style="display:flex; flex-direction:column; align-items:right; text-align:right;">
         <img id="speciesImage" src="" alt="" style="width:80%; max-width:250px; border-radius:8px; display:none;">
         <h3 id="speciesCommon" style="margin:5px 0;"></h3>
@@ -94,7 +99,7 @@
 
 
 
-
+/* Data hardcoded from the R script */
 const surveyData = [  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2015, total_count:4, species_name: "Adelotus brevis", common_name: "Tusked Frog", url: "https://www.frogid.net.au/frogs/adelotus-brevis"},
   {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2016, total_count:4, species_name: "Adelotus brevis", common_name: "Tusked Frog", url: "https://www.frogid.net.au/frogs/adelotus-brevis"},
   {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2017, total_count:2, species_name: "Adelotus brevis", common_name: "Tusked Frog", url: "https://www.frogid.net.au/frogs/adelotus-brevis"},
@@ -357,9 +362,7 @@ const surveyData = [  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:
 
 ];
 
-/* -----------------------
-   Map
-------------------------*/
+/* Map Base layers */
 const map = L.map('map').setView([-26.5,153.02],11);
 const baseLayers = {
 "Esri World Imagery": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution:"&copy; Esri" }),
@@ -370,6 +373,7 @@ baseLayers["Esri World Imagery"].addTo(map);
 const markersLayer = L.layerGroup().addTo(map);
 L.control.layers(baseLayers,{ "Survey Sites": markersLayer }).addTo(map);
 
+/* Site points on map that change colour and size */	
 function getColor(total){
   if(total<=30) return "#fef0d9";
   if(total<=60) return "#fdcc8a";
@@ -387,7 +391,9 @@ function groupData(data){
     out[key].species.push(d);
   });
   return Object.values(out);
-}
+} 
+	
+	/* Update site markers with the cane toad remover */
 function updateMarkers(year){
   markersLayer.clearLayers();
   const removeCaneToad = document.getElementById("removeCaneToad").checked;
@@ -411,9 +417,7 @@ function updateMarkers(year){
   });
 }
 
-/* -----------------------
-   Slider
-------------------------*/
+/* Year slider */
 const years = surveyData.length ? [...new Set(surveyData.map(d=>d.year))].sort() : [];
 const slider = document.getElementById("slider");
 const yearDisplay = document.getElementById("yearDisplay");
@@ -423,13 +427,11 @@ if(years.length){
   document.getElementById("removeCaneToad").addEventListener("change",()=>{ updateMarkers(slider.noUiSlider.get()); });
   updateMarkers(years[0]);
 } else {
-  // no data
+
   yearDisplay.innerText = "Year";
 }
 
-/* -----------------------
-   Legend 
-------------------------*/
+/* Legend */
 const legend = L.control({position:"bottomright"});
 legend.onAdd=function(){
   const div = L.DomUtil.create("div","legend");
@@ -445,15 +447,14 @@ legend.onAdd=function(){
 };
 legend.addTo(map);
 
-/* -----------------------
-   Plot UI wiring
-------------------------*/
+/* Plot UI */
 const plotBtn = document.getElementById("plotsButton");
 const plotWin = document.getElementById("plotWindow");
 const backBtn = document.getElementById("backButton");
 plotBtn.onclick = ()=> plotWin.style.display="block";
 backBtn.onclick = ()=> plotWin.style.display="none";
 
+/* Speceis matadata for the plot */	
 /species metadata/
 const speciesMeta = {
  "Cane Toad": {
@@ -641,7 +642,7 @@ credit: "Indra Bone",
 
 };
 
-
+/* Plot species dropdown menu */
 const speciesSelect = document.getElementById("speciesSelect");
 speciesSelect.innerHTML = '<option value="ALL">All species</option>'; 
 [...new Set(surveyData.map(d => d.common_name))].sort().forEach(s => {
@@ -670,7 +671,7 @@ const siteYearMap = {};
   siteYearMap[site] = yrs;
 });
 
-
+/* Stop site selectin if species has not breen spotted */
 const siteNames = [...new Set(surveyData.map(d=>d.site_name))].sort();
 const siteColors = {};
 const palette = ["#1f77b4","#ff7f0e","#2ca02c","#d62728","#9467bd","#8c564b","#e377c2","#7f7f7f","#bcbd22","#17becf"];
@@ -733,7 +734,7 @@ let fullChart = new Chart(ctxFull, {
   }
 });
 
-
+/* All species data and UI */
 function updateSpeciesInfo(){
   const sp = speciesSelect.value;
 
@@ -755,10 +756,10 @@ function updateSpeciesInfo(){
     return;
   }
 
-  // Individual species selected
+ /* If 1 speceis is selected  */
   const meta = speciesMeta[sp];
-
-  // Image handling and alignment
+	
+/* Image alignment when species is sleceted */
   if(meta && meta.image){
     speciesImage.src = meta.image;
     speciesImage.style.display = "block";
@@ -836,3 +837,4 @@ speciesSelect.addEventListener("change", ()=>{
 </script>
 </body>
 </html>
+
