@@ -1,840 +1,788 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <title>Interactive Frog Map</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8">
+<title>Ecollaboration Frog Survey Map</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <!-- Leaflet -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <!-- noUiSlider -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.0/nouislider.min.css"/>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.0/nouislider.min.js"></script>
+<style>
+body {
+    body, button, select, label, div {
+    font-family: "Poppins", sans-serif;
+    margin: 0,
+padding : 0;
+}
+h2, h3 {
+    font-weight: 500;  
+}
+#map {
+    height: 100vh;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    border: none; 
+    box-sizing: border-box; 
+}
 
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+/* =========================
+POPUP TABS
+========================= */
+.tabs{ margin-bottom:8px; }
+.tab{ display:inline-block; background:#eee; padding:5px 10px; margin-right:4px; cursor:pointer; border-radius:4px; }
+.tab.active{ background:#ccc; }
 
-  <!-- Font -->
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+/* Hide all tabs by default */
+.tabContent {
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    font-size: 14px;
+    line-height: 1.4;
+    overflow: visible; 
+    max-height: none;
+    padding: 4px 0;
+}
 
+/* Active tab */
+.tabContent.active {
+    display: block;
+    opacity: 1;
+}
 
-  <!-- Map set up -->	
-  <style>
-    body, button, select, label, div { font-family: "Poppins", sans-serif; margin:0; }
-    #map { height:100vh; }
-    #slider { position:absolute; top:10px; left:50%; transform:translateX(-50%); z-index:1000; width:300px; }
-    #yearDisplay { position:absolute; top:50px; left:50%; transform:translateX(-50%); z-index:1000; background:white; padding:4px 8px; font-weight:bold; border-radius:4px; }
-    #toggleContainer { position:absolute; top:90px; left:50%; transform:translateX(-50%); z-index:1000; background:white; padding:4px 8px; border-radius:4px; }
-    #plotsButton { position:absolute; bottom:10px; left:10px; z-index:1000; background:#ffffff; padding:6px 12px; border-radius:5px; cursor:pointer; border:1px solid #aaa; font-weight:bold; }
-    #plotWindow { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:white; z-index:2000; padding:20px; overflow:auto; }
-    #backButton { background:#0077cc; color:white; padding:8px 14px; border-radius:6px; border:none; cursor:pointer; margin-bottom:12px; font-weight:600; }
-    #siteButtons { margin-bottom:15px; display:flex; flex-wrap:wrap; gap:6px; align-items:flex-start; }
-    .siteWrap { display:flex; flex-direction:column; align-items:flex-start; }
-    .siteBtn { flex:0 0 auto; padding:6px 12px; border-radius:5px; cursor:pointer; border:1px solid #ccc; background:#fff; color:#000; }
-    .siteBtn.selected { color:#fff; }
-    .siteBtn.disabled { opacity:0.4; pointer-events:none; }
-    .siteYears { font-size:12px; color:#444; margin-top:2px; margin-left:4px; }
-    .legend {
-      background:white;
-      padding:6px 8px;
-      border-radius:5px;
-      line-height:1.4em;
-      font-size:14px;
-      display:flex;
-      flex-direction:column;
-    }
-    .legend-row { display:flex; align-items:center; margin-bottom:2px; }
-    .legend i { width:18px; height:18px; margin-right:6px; flex-shrink:0; border:1px solid #000; }
-    
-/* Plot set up */
-    #plotFlexContainer { display:flex; width:100%; height:80vh; gap:10px; }
-    #plotContent { flex:4; }
-    #extraSpace { flex:2; background:white; margin-left:10px; padding:10px; display:flex; flex-direction:column; align-items:center; }
-    #speciesInfo img { width:80%; border-radius:8px; display:none; margin-bottom:6px; }
-    #speciesCredit { font-size:12px; color:#333; margin-top:6px; }
-    canvas { width:100%; height:100%; }
-  </style>
+/* DATA tab scroll */
+#data.tabContent {
+    max-height: 200px;   
+    overflow-y: auto;    
+    overflow-x: hidden;
+}
+
+/* Images in data tab */
+#data img {
+    width: 50px;
+    height: auto;
+    float: left;
+    margin-right: 10px;
+    margin-bottom: 6px;
+}
+
+/* Site tab images */
+#site img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    display: block;
+    margin: 0 auto 4px auto;
+}
+
+/* Clear floats for data rows */
+#data div {
+    overflow: hidden;
+    margin-bottom: 6px;
+}
+
+/* LEAFLET POPUP */
+.leaflet-popup-content {
+    font-size: 14px;
+    line-height: 1.4;
+    white-space: normal;
+}
+.leaflet-popup-content img {
+    display: block;
+    margin: 0 auto 8px auto;
+}
+.leaflet-popup-content-wrapper {
+    padding: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    border-radius: 12px;
+    background: #fff;
+}
+.leaflet-popup-content { margin: 0; }
+.leaflet-popup-tip { background: #fff; }
+
+/* CONTROLS */
+#controls{
+position:absolute;
+top:10px; left:50%;
+transform:translateX(-50%);
+background:white; padding:12px 18px;
+border-radius:8px;
+box-shadow:0 3px 8px rgba(0,0,0,0.3);
+z-index:600;
+}
+#yearSlider{ width:220px; display:block; margin:0 auto; }
+.controlRow{ margin-bottom:6px; text-align:center; }
+
+/* PLOT WINDOW */
+#plotsButton{
+position:absolute;
+bottom:15px;
+left:15px;
+background:white;
+padding:6px 12px;
+border-radius:6px;
+border:1px solid #aaa;
+cursor:pointer;
+z-index:600;
+font-weight:bold;
+}
+#plotWindow{
+display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:white;
+z-index:3000;
+padding:20px;
+overflow:auto;
+}
+#backButton{
+background:#0077cc;
+color:white;
+padding:8px 14px;
+border-radius:6px;
+border:none;
+cursor:pointer;
+margin-bottom:12px;
+font-weight:bold;
+}
+#siteButtons{
+margin-bottom:15px;
+display:flex;
+flex-wrap:wrap;
+gap:6px;
+}
+.siteWrap{
+display:flex;
+flex-direction:column;
+}
+.siteBtn{
+padding:6px 12px;
+border-radius:5px;
+border:1px solid #ccc;
+cursor:pointer;
+background:white;
+}
+.siteBtn.selected{ color:white; }
+.siteBtn.disabled{ opacity:0.4; pointer-events:none; }
+.siteYears{
+font-size:11px;
+color:#444;
+margin-left:4px;
+}
+#plotFlexContainer{
+display:flex;
+width:100%;
+height:80vh;
+gap:20px;
+}
+#plotContent{ flex:4; }
+#extraSpace{
+flex:2;
+display:flex;
+flex-direction:column;
+align-items:center;
+}
+canvas{
+width:100%;
+height:100%;
+}
+/* legend */
+#colorLegend{
+position:absolute; bottom:20px; right:20px;
+background:white; padding:10px;
+border-radius:6px; font-size:13px;
+box-shadow:0 2px 6px rgba(0,0,0,0.3);
+z-index:500;
+}
+.colorBox { display:inline-block; width:20px; height:20px; margin-right:6px; vertical-align:middle; }
+/* intro modal */
+#intro{
+position:fixed; top:0; left:0;
+width:100%; height:100%;
+background:rgba(0,0,0,0.65);
+display:flex; align-items:center; justify-content:center;
+z-index:2000;
+}
+#introBox{
+background:white; padding:30px; max-width:500px; border-radius:10px;
+position:relative;
+}
+#closeIntro{ position:absolute; top:10px; right:15px; cursor:pointer; font-size:20px; }
+</style>
 </head>
 <body>
 
-<!-- Features, map, slider, year, cane toad remover, plot -->
-<div id="map"></div>
-<div id="slider"></div>
-<div id="yearDisplay">Year</div>
-<div id="toggleContainer"><label><input type="checkbox" id="removeCaneToad"> Remove Cane Toads?</label></div>
-<div id="plotsButton">📊 Plots</div>
-
-<!-- Fullscreen plot window -->
-<div id="plotWindow">
-  <button id="backButton">⬅ Back to Map</button>
-  <h2>Species Analysis</h2>
-
-  <label>Species:</label>
-  <select id="speciesSelect"><option value="">Select species</option></select>
-
-  <div id="siteButtons"></div>
-
-  <div id="plotFlexContainer">
-    <div id="plotContent">
-      <canvas id="fullPlot"></canvas>
-    </div>
-
- <!-- Space to the roght of the plot-->
-	  <div id="extraSpace">
-      <div id="speciesInfo" style=style="display:flex; flex-direction:column; align-items:right; text-align:right;">
-        <img id="speciesImage" src="" alt="" style="width:80%; max-width:250px; border-radius:8px; display:none;">
-        <h3 id="speciesCommon" style="margin:5px 0;"></h3>
-        <p id="speciesScientific" style="margin:5px 0; font-style:italic;"></p>
-        <p id="speciesIUCN" style="margin:5px 0; font-weight:bold;"></p>
-        <div id="speciesCredit" style="margin-top:6px;"></div>
-	<div id="speciesDescription" style="margin-top:10px;"></div>
-      </div>
-    </div>
+<div id="intro">
+  <div id="introBox">
+    <div id="closeIntro">✕</div>
+    <h2>Ecollaboration Frog Survey Map</h2>
+    <p>This map displays frog survey data collected over multiple years.</p>
+    <p>Add some more text here.</p>
+    <p>Acknowledgements: field teams, land holders and volunteers.</p>
   </div>
+</div>
+
+<div id="controls">
+ <div class="controlRow">
+  <span id="yearLabel" style="font-weight:bold; font-size:16px;"></span>
+</div>
+<input type="range" id="yearSlider">
+<label><input type="checkbox" id="toadToggle"> Remove Cane Toads</label>
+</div>
+
+<div id="colorLegend"></div>
+<div id="map"></div>
+
+<div id="plotsButton">🐸 📊 Plots</div>
+
+<div id="plotWindow">
+<button id="backButton">⬅ Back to Map</button>
+
+<h2>Species Analysis</h2>
+
+<label>Species:</label>
+<select id="speciesSelect">
+<option value="ALL">All Species</option>
+</select>
+
+<div id="siteButtons"></div>
+
+<div id="plotFlexContainer">
+
+<div id="plotContent">
+<canvas id="fullPlot"></canvas>
+</div>
+
+<div id="extraSpace">
+  <img id="speciesImage" style="width:260px;border-radius:10px;display:none">
+
+  <h3 id="speciesCommon"></h3>
+  <p id="speciesScientific" style="font-style:italic"></p>
+  <p id="speciesIUCN"></p>
+  <p id="speciesCredit"></p>
+</div>
+
+</div>
 </div>
 
 <script>
 
+/* =========================
+DATA URLS
+========================= */
+const SURVEY_URL = "https://raw.githubusercontent.com/Ethann-5/Frog_Map_Assets/main/survey_data.csv";
+const SITE_META_URL = "https://raw.githubusercontent.com/Ethann-5/Frog_Map_Assets/main/site_meta.csv";
+const SPECIES_META_URL = "https://raw.githubusercontent.com/Ethann-5/Frog_Map_Assets/main/species_meta.csv";
 
+/* =========================
+MAP SETUP
+========================= */
+const map = L.map("map").setView([-26.58,153.09],11);
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution:"&copy; Esri" }).addTo(map);
 
-/* Data hardcoded from the R script */
-const surveyData = [  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2015, total_count:4, species_name: "Adelotus brevis", common_name: "Tusked Frog", url: "https://www.frogid.net.au/frogs/adelotus-brevis"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2016, total_count:4, species_name: "Adelotus brevis", common_name: "Tusked Frog", url: "https://www.frogid.net.au/frogs/adelotus-brevis"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2017, total_count:2, species_name: "Adelotus brevis", common_name: "Tusked Frog", url: "https://www.frogid.net.au/frogs/adelotus-brevis"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2018, total_count:2, species_name: "Adelotus brevis", common_name: "Tusked Frog", url: "https://www.frogid.net.au/frogs/adelotus-brevis"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2019, total_count:3, species_name: "Adelotus brevis", common_name: "Tusked Frog", url: "https://www.frogid.net.au/frogs/adelotus-brevis"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2020, total_count:2, species_name: "Adelotus brevis", common_name: "Tusked Frog", url: "https://www.frogid.net.au/frogs/adelotus-brevis"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2022, total_count:3, species_name: "Adelotus brevis", common_name: "Tusked Frog", url: "https://www.frogid.net.au/frogs/adelotus-brevis"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2023, total_count:3, species_name: "Adelotus brevis", common_name: "Tusked Frog", url: "https://www.frogid.net.au/frogs/adelotus-brevis"},
-  {site_number:5, site_name: "MRBBG", lat:-26.71882, lon:153.023028, year:2023, total_count:5, species_name: "Adelotus brevis", common_name: "Tusked Frog", url: "https://www.frogid.net.au/frogs/adelotus-brevis"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2024, total_count:3, species_name: "Adelotus brevis", common_name: "Tusked Frog", url: "https://www.frogid.net.au/frogs/adelotus-brevis"},
-  {site_number:5, site_name: "MRBBG", lat:-26.71882, lon:153.023028, year:2024, total_count:6, species_name: "Adelotus brevis", common_name: "Tusked Frog", url: "https://www.frogid.net.au/frogs/adelotus-brevis"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2025, total_count:11, species_name: "Adelotus brevis", common_name: "Tusked Frog", url: "https://www.frogid.net.au/frogs/adelotus-brevis"},
-  {site_number:6, site_name: "Maleny", lat:-26.760438, lon:152.851298, year:2025, total_count:2, species_name: "Adelotus brevis", common_name: "Tusked Frog", url: "https://www.frogid.net.au/frogs/adelotus-brevis"},
-  {site_number:5, site_name: "MRBBG", lat:-26.71882, lon:153.023028, year:2025, total_count:5, species_name: "Adelotus brevis", common_name: "Tusked Frog", url: "https://www.frogid.net.au/frogs/adelotus-brevis"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2025, total_count:6, species_name: "Crinia parinsignifera", common_name: "Eastern Sign-bearing Froglet", url: "https://www.frogid.net.au/frogs/crinia-parinsignifera"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2014, total_count:2, species_name: "Crinia tinnula", common_name: "Wallum Froglet", url: "https://www.frogid.net.au/frogs/crinia-tinnula"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2015, total_count:18, species_name: "Crinia tinnula", common_name: "Wallum Froglet", url: "https://www.frogid.net.au/frogs/crinia-tinnula"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2016, total_count:31, species_name: "Crinia tinnula", common_name: "Wallum Froglet", url: "https://www.frogid.net.au/frogs/crinia-tinnula"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2017, total_count:14, species_name: "Crinia tinnula", common_name: "Wallum Froglet", url: "https://www.frogid.net.au/frogs/crinia-tinnula"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2018, total_count:9, species_name: "Crinia tinnula", common_name: "Wallum Froglet", url: "https://www.frogid.net.au/frogs/crinia-tinnula"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2019, total_count:7, species_name: "Crinia tinnula", common_name: "Wallum Froglet", url: "https://www.frogid.net.au/frogs/crinia-tinnula"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2022, total_count:2, species_name: "Crinia tinnula", common_name: "Wallum Froglet", url: "https://www.frogid.net.au/frogs/crinia-tinnula"},
-  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2022, total_count:3, species_name: "Crinia tinnula", common_name: "Wallum Froglet", url: "https://www.frogid.net.au/frogs/crinia-tinnula"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2023, total_count:3, species_name: "Crinia tinnula", common_name: "Wallum Froglet", url: "https://www.frogid.net.au/frogs/crinia-tinnula"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2014, total_count:5, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2015, total_count:2, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2015, total_count:20, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2016, total_count:2, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
-  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2016, total_count:4, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2016, total_count:8, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2017, total_count:6, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2018, total_count:8, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
-  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2018, total_count:7, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
-  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2018, total_count:25, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
-  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2019, total_count:8, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
-  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2019, total_count:8, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2019, total_count:38, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2020, total_count:7, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
-  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2020, total_count:22, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2020, total_count:38, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2021, total_count:8, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
-  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2021, total_count:22, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2021, total_count:74, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2022, total_count:3, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
-  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2022, total_count:11, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2022, total_count:85, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2023, total_count:2, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
-  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2023, total_count:4, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2023, total_count:6, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
-  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2024, total_count:17, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2024, total_count:18, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2025, total_count:2, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
-  {site_number:5, site_name: "MRBBG", lat:-26.71882, lon:153.023028, year:2025, total_count:7, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2025, total_count:5, species_name: "Limnodynastes peronii", common_name: "Striped Marsh Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-peronii"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2017, total_count:2, species_name: "Limnodynastes terraereginae", common_name: "Superb Banjo Frog", url: "https://www.frogid.net.au/frogs/limnodynastes-terraereginae"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2014, total_count:2, species_name: "Litoria caerulea", common_name: "Green Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-caerulea"},
-  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2014, total_count:3, species_name: "Litoria caerulea", common_name: "Green Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-caerulea"},
-  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2015, total_count:3, species_name: "Litoria caerulea", common_name: "Green Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-caerulea"},
-  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2018, total_count:2, species_name: "Litoria caerulea", common_name: "Green Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-caerulea"},
-  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2019, total_count:4, species_name: "Litoria caerulea", common_name: "Green Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-caerulea"},
-  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2020, total_count:2, species_name: "Litoria caerulea", common_name: "Green Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-caerulea"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2021, total_count:2, species_name: "Litoria caerulea", common_name: "Green Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-caerulea"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2022, total_count:2, species_name: "Litoria caerulea", common_name: "Green Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-caerulea"},
-  {site_number:6, site_name: "Maleny", lat:-26.760438, lon:152.851298, year:2025, total_count:2, species_name: "Litoria caerulea", common_name: "Green Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-caerulea"},
-  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2016, total_count:3, species_name: "Litoria dentata", common_name: "Robust Bleating Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-dentata"},
-  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2020, total_count:2, species_name: "Litoria dentata", common_name: "Robust Bleating Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-dentata"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2014, total_count:9, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2014, total_count:3, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2014, total_count:4, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2015, total_count:15, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2015, total_count:5, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2015, total_count:4, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2015, total_count:4, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2016, total_count:4, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2016, total_count:7, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2016, total_count:7, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2016, total_count:49, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2016, total_count:5, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2016, total_count:2, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2017, total_count:6, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2017, total_count:6, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2017, total_count:17, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2017, total_count:2, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2017, total_count:2, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2018, total_count:7, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2018, total_count:4, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2018, total_count:21, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2018, total_count:41, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2018, total_count:15, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2019, total_count:11, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2019, total_count:14, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2019, total_count:22, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2019, total_count:39, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2019, total_count:10, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2020, total_count:14, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2020, total_count:3, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2020, total_count:13, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2020, total_count:15, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2020, total_count:44, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2021, total_count:77, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2021, total_count:34, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2021, total_count:56, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2022, total_count:49, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2022, total_count:14, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2022, total_count:42, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2022, total_count:52, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2023, total_count:23, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2023, total_count:3, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2023, total_count:30, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2023, total_count:4, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2024, total_count:39, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2024, total_count:3, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2024, total_count:30, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2024, total_count:36, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2025, total_count:31, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2025, total_count:2, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:5, site_name: "MRBBG", lat:-26.71882, lon:153.023028, year:2025, total_count:2, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2025, total_count:47, species_name: "Litoria fallax", common_name: "Eastern Dwarf Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-fallax"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2020, total_count:2, species_name: "Litoria freycineti", common_name: "Wallum Rocket Frog", url: "https://www.frogid.net.au/frogs/litoria-freycineti"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2016, total_count:2, species_name: "Litoria gracilenta", common_name: "Graceful Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-gracilenta"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2017, total_count:2, species_name: "Litoria gracilenta", common_name: "Graceful Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-gracilenta"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2017, total_count:3, species_name: "Litoria gracilenta", common_name: "Graceful Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-gracilenta"},
-  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2017, total_count:2, species_name: "Litoria gracilenta", common_name: "Graceful Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-gracilenta"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2018, total_count:20, species_name: "Litoria gracilenta", common_name: "Graceful Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-gracilenta"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2018, total_count:2, species_name: "Litoria gracilenta", common_name: "Graceful Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-gracilenta"},
-  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2018, total_count:2, species_name: "Litoria gracilenta", common_name: "Graceful Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-gracilenta"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2019, total_count:2, species_name: "Litoria gracilenta", common_name: "Graceful Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-gracilenta"},
-  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2019, total_count:5, species_name: "Litoria gracilenta", common_name: "Graceful Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-gracilenta"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2019, total_count:4, species_name: "Litoria gracilenta", common_name: "Graceful Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-gracilenta"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2021, total_count:3, species_name: "Litoria gracilenta", common_name: "Graceful Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-gracilenta"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2022, total_count:3, species_name: "Litoria gracilenta", common_name: "Graceful Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-gracilenta"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2022, total_count:7, species_name: "Litoria gracilenta", common_name: "Graceful Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-gracilenta"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2025, total_count:3, species_name: "Litoria gracilenta", common_name: "Graceful Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-gracilenta"},
-  {site_number:6, site_name: "Maleny", lat:-26.760438, lon:152.851298, year:2025, total_count:3, species_name: "Litoria gracilenta", common_name: "Graceful Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-gracilenta"},
-  {site_number:5, site_name: "MRBBG", lat:-26.71882, lon:153.023028, year:2025, total_count:2, species_name: "Litoria gracilenta", common_name: "Graceful Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-gracilenta"},
-  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2015, total_count:3, species_name: "Litoria latopalmata", common_name: "Graceful Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-latopalmata"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2016, total_count:6, species_name: "Litoria latopalmata", common_name: "Graceful Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-latopalmata"},
-  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2017, total_count:2, species_name: "Litoria nasuta", common_name: "Striped Rocket Frog", url: "https://www.frogid.net.au/frogs/litoria-nasuta"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2014, total_count:2, species_name: "Litoria olongburensis", common_name: "Wallum Sedge Frog", url: "https://www.frogid.net.au/frogs/litoria-olongburensis"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2015, total_count:13, species_name: "Litoria olongburensis", common_name: "Wallum Sedge Frog", url: "https://www.frogid.net.au/frogs/litoria-olongburensis"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2016, total_count:7, species_name: "Litoria olongburensis", common_name: "Wallum Sedge Frog", url: "https://www.frogid.net.au/frogs/litoria-olongburensis"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2017, total_count:4, species_name: "Litoria olongburensis", common_name: "Wallum Sedge Frog", url: "https://www.frogid.net.au/frogs/litoria-olongburensis"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2018, total_count:2, species_name: "Litoria olongburensis", common_name: "Wallum Sedge Frog", url: "https://www.frogid.net.au/frogs/litoria-olongburensis"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2019, total_count:6, species_name: "Litoria olongburensis", common_name: "Wallum Sedge Frog", url: "https://www.frogid.net.au/frogs/litoria-olongburensis"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2020, total_count:16, species_name: "Litoria olongburensis", common_name: "Wallum Sedge Frog", url: "https://www.frogid.net.au/frogs/litoria-olongburensis"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2020, total_count:5, species_name: "Litoria olongburensis", common_name: "Wallum Sedge Frog", url: "https://www.frogid.net.au/frogs/litoria-olongburensis"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2021, total_count:17, species_name: "Litoria olongburensis", common_name: "Wallum Sedge Frog", url: "https://www.frogid.net.au/frogs/litoria-olongburensis"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2022, total_count:2, species_name: "Litoria olongburensis", common_name: "Wallum Sedge Frog", url: "https://www.frogid.net.au/frogs/litoria-olongburensis"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2023, total_count:34, species_name: "Litoria olongburensis", common_name: "Wallum Sedge Frog", url: "https://www.frogid.net.au/frogs/litoria-olongburensis"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2024, total_count:3, species_name: "Litoria olongburensis", common_name: "Wallum Sedge Frog", url: "https://www.frogid.net.au/frogs/litoria-olongburensis"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2025, total_count:2, species_name: "Litoria olongburensis", common_name: "Wallum Sedge Frog", url: "https://www.frogid.net.au/frogs/litoria-olongburensis"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2019, total_count:2, species_name: "Litoria pearsoniana", common_name: "Pearson's Stream Frog", url: "https://www.frogid.net.au/frogs/litoria-pearsoniana"},
-  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2015, total_count:3, species_name: "Litoria peronii", common_name: "Peron's Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-peronii"},
-  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2016, total_count:3, species_name: "Litoria peronii", common_name: "Peron's Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-peronii"},
-  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2019, total_count:3, species_name: "Litoria peronii", common_name: "Peron's Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-peronii"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2020, total_count:2, species_name: "Litoria peronii", common_name: "Peron's Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-peronii"},
-  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2020, total_count:3, species_name: "Litoria peronii", common_name: "Peron's Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-peronii"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2020, total_count:19, species_name: "Litoria peronii", common_name: "Peron's Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-peronii"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2025, total_count:2, species_name: "Litoria peronii", common_name: "Peron's Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-peronii"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2025, total_count:3, species_name: "Litoria rubella", common_name: "Red Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-rubella"},
-  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2015, total_count:3, species_name: "Litoria tyleri", common_name: "Tyler's Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-tyleri"},
-  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2016, total_count:8, species_name: "Litoria tyleri", common_name: "Tyler's Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-tyleri"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2018, total_count:10, species_name: "Litoria tyleri", common_name: "Tyler's Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-tyleri"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2020, total_count:7, species_name: "Litoria tyleri", common_name: "Tyler's Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-tyleri"},
-  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2020, total_count:2, species_name: "Litoria tyleri", common_name: "Tyler's Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-tyleri"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2020, total_count:19, species_name: "Litoria tyleri", common_name: "Tyler's Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-tyleri"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2021, total_count:39, species_name: "Litoria tyleri", common_name: "Tyler's Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-tyleri"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2022, total_count:43, species_name: "Litoria tyleri", common_name: "Tyler's Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-tyleri"},
-  {site_number:5, site_name: "MRBBG", lat:-26.71882, lon:153.023028, year:2023, total_count:2, species_name: "Litoria tyleri", common_name: "Tyler's Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-tyleri"},
-  {site_number:5, site_name: "MRBBG", lat:-26.71882, lon:153.023028, year:2024, total_count:4, species_name: "Litoria tyleri", common_name: "Tyler's Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-tyleri"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2024, total_count:15, species_name: "Litoria tyleri", common_name: "Tyler's Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-tyleri"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2025, total_count:15, species_name: "Litoria tyleri", common_name: "Tyler's Tree Frog", url: "https://www.frogid.net.au/frogs/litoria-tyleri"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2014, total_count:10, species_name: "Litoria wilcoxii", common_name: "Eastern Stony Creek Frog", url: "https://www.frogid.net.au/frogs/litoria-wilcoxii"},
-  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2015, total_count:24, species_name: "Litoria wilcoxii", common_name: "Eastern Stony Creek Frog", url: "https://www.frogid.net.au/frogs/litoria-wilcoxii"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2016, total_count:3, species_name: "Litoria wilcoxii", common_name: "Eastern Stony Creek Frog", url: "https://www.frogid.net.au/frogs/litoria-wilcoxii"},
-  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2016, total_count:2, species_name: "Litoria wilcoxii", common_name: "Eastern Stony Creek Frog", url: "https://www.frogid.net.au/frogs/litoria-wilcoxii"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2017, total_count:11, species_name: "Litoria wilcoxii", common_name: "Eastern Stony Creek Frog", url: "https://www.frogid.net.au/frogs/litoria-wilcoxii"},
-  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2017, total_count:4, species_name: "Litoria wilcoxii", common_name: "Eastern Stony Creek Frog", url: "https://www.frogid.net.au/frogs/litoria-wilcoxii"},
-  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2017, total_count:3, species_name: "LItoria wilcoxii", common_name: "Eastern Stony Creek Frog", url: "https://www.frogid.net.au/frogs/litoria-wilcoxii"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2018, total_count:8, species_name: "Litoria wilcoxii", common_name: "Eastern Stony Creek Frog", url: "https://www.frogid.net.au/frogs/litoria-wilcoxii"},
-  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2018, total_count:2, species_name: "Litoria wilcoxii", common_name: "Eastern Stony Creek Frog", url: "https://www.frogid.net.au/frogs/litoria-wilcoxii"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2019, total_count:17, species_name: "Litoria wilcoxii", common_name: "Eastern Stony Creek Frog", url: "https://www.frogid.net.au/frogs/litoria-wilcoxii"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2020, total_count:15, species_name: "Litoria wilcoxii", common_name: "Eastern Stony Creek Frog", url: "https://www.frogid.net.au/frogs/litoria-wilcoxii"},
-  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2020, total_count:3, species_name: "Litoria wilcoxii", common_name: "Eastern Stony Creek Frog", url: "https://www.frogid.net.au/frogs/litoria-wilcoxii"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2022, total_count:10, species_name: "Litoria wilcoxii", common_name: "Eastern Stony Creek Frog", url: "https://www.frogid.net.au/frogs/litoria-wilcoxii"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2023, total_count:9, species_name: "Litoria wilcoxii", common_name: "Eastern Stony Creek Frog", url: "https://www.frogid.net.au/frogs/litoria-wilcoxii"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2024, total_count:19, species_name: "Litoria wilcoxii", common_name: "Eastern Stony Creek Frog", url: "https://www.frogid.net.au/frogs/litoria-wilcoxii"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2025, total_count:10, species_name: "Litoria wilcoxii", common_name: "Eastern Stony Creek Frog", url: "https://www.frogid.net.au/frogs/litoria-wilcoxii"},
-  {site_number:6, site_name: "Maleny", lat:-26.760438, lon:152.851298, year:2025, total_count:2, species_name: "Litoria wilcoxii", common_name: "Eastern Stony Creek Frog", url: "https://www.frogid.net.au/frogs/litoria-wilcoxii"},
-  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2015, total_count:2, species_name: "Mixophyes fasciolatus", common_name: "Great Barred Frog", url: "https://www.frogid.net.au/frogs/mixophyes-fasciolatus"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2018, total_count:2, species_name: "Mixophyes fasciolatus", common_name: "Great Barred Frog", url: "https://www.frogid.net.au/frogs/mixophyes-fasciolatus"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2022, total_count:8, species_name: "Mixophyes fasciolatus", common_name: "Great Barred Frog", url: "https://www.frogid.net.au/frogs/mixophyes-fasciolatus"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2023, total_count:3, species_name: "Mixophyes fasciolatus", common_name: "Great Barred Frog", url: "https://www.frogid.net.au/frogs/mixophyes-fasciolatus"},
-  {site_number:5, site_name: "MRBBG", lat:-26.71882, lon:153.023028, year:2023, total_count:6, species_name: "Mixophyes fasciolatus", common_name: "Great Barred Frog", url: "https://www.frogid.net.au/frogs/mixophyes-fasciolatus"},
-  {site_number:5, site_name: "MRBBG", lat:-26.71882, lon:153.023028, year:2023, total_count:2, species_name: "Mixophyes fasciolatus", common_name: "Great Barred Frog", url: "https://www.frogid.net.au/frogs/mixophyes-fasciolatus"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2024, total_count:6, species_name: "Mixophyes fasciolatus", common_name: "Great Barred Frog", url: "https://www.frogid.net.au/frogs/mixophyes-fasciolatus"},
-  {site_number:5, site_name: "MRBBG", lat:-26.71882, lon:153.023028, year:2024, total_count:27, species_name: "Mixophyes fasciolatus", common_name: "Great Barred Frog", url: "https://www.frogid.net.au/frogs/mixophyes-fasciolatus"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2025, total_count:17, species_name: "Mixophyes fasciolatus", common_name: "Great Barred Frog", url: "https://www.frogid.net.au/frogs/mixophyes-fasciolatus"},
-  {site_number:6, site_name: "Maleny", lat:-26.760438, lon:152.851298, year:2025, total_count:81, species_name: "Mixophyes fasciolatus", common_name: "Great Barred Frog", url: "https://www.frogid.net.au/frogs/mixophyes-fasciolatus"},
-  {site_number:5, site_name: "MRBBG", lat:-26.71882, lon:153.023028, year:2025, total_count:9, species_name: "Mixophyes fasciolatus", common_name: "Great Barred Frog", url: "https://www.frogid.net.au/frogs/mixophyes-fasciolatus"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2014, total_count:3, species_name: "Mixophyes iteratus", common_name: "Giant Barred Frog", url: "https://www.frogid.net.au/frogs/mixophyes-iteratus"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2015, total_count:3, species_name: "Mixophyes iteratus", common_name: "Giant Barred Frog", url: "https://www.frogid.net.au/frogs/mixophyes-iteratus"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2016, total_count:12, species_name: "Mixophyes iteratus", common_name: "Giant Barred Frog", url: "https://www.frogid.net.au/frogs/mixophyes-iteratus"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2018, total_count:2, species_name: "Mixophyes iteratus", common_name: "Giant Barred Frog", url: "https://www.frogid.net.au/frogs/mixophyes-iteratus"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2022, total_count:3, species_name: "Mixophyes iteratus", common_name: "Giant Barred Frog", url: "https://www.frogid.net.au/frogs/mixophyes-iteratus"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2023, total_count:4, species_name: "Mixophyes iteratus", common_name: "Giant Barred Frog", url: "https://www.frogid.net.au/frogs/mixophyes-iteratus"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2024, total_count:6, species_name: "Mixophyes iteratus", common_name: "Giant Barred Frog", url: "https://www.frogid.net.au/frogs/mixophyes-iteratus"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2025, total_count:12, species_name: "Mixophyes iteratus", common_name: "Giant Barred Frog", url: "https://www.frogid.net.au/frogs/mixophyes-iteratus"},
-  {site_number:6, site_name: "Maleny", lat:-26.760438, lon:152.851298, year:2025, total_count:46, species_name: "Mixophyes iteratus", common_name: "Giant Barred Frog", url: "https://www.frogid.net.au/frogs/mixophyes-iteratus"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2014, total_count:4, species_name: "Pseudophryne raveni", common_name: "Copper-backed Toadlet", url: "https://www.frogid.net.au/frogs/pseudophryne-raveni"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2015, total_count:4, species_name: "Pseudophryne raveni", common_name: "Copper-backed Toadlet", url: "https://www.frogid.net.au/frogs/pseudophryne-raveni"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2016, total_count:4, species_name: "Pseudophryne raveni", common_name: "Copper-backed Toadlet", url: "https://www.frogid.net.au/frogs/pseudophryne-raveni"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2017, total_count:3, species_name: "Pseudophryne raveni", common_name: "Copper-backed Toadlet", url: "https://www.frogid.net.au/frogs/pseudophryne-raveni"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2018, total_count:5, species_name: "Pseudophryne raveni", common_name: "Copper-backed Toadlet", url: "https://www.frogid.net.au/frogs/pseudophryne-raveni"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2014, total_count:2, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2014, total_count:2, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2014, total_count:5, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
-  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2015, total_count:43, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2016, total_count:2, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
-  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2016, total_count:85, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
-  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2016, total_count:86, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2016, total_count:29, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2017, total_count:4, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
-  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2017, total_count:119, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2017, total_count:23, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2018, total_count:7, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2018, total_count:5, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
-  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2018, total_count:36, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
-  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2018, total_count:116, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2018, total_count:5, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2019, total_count:13, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2019, total_count:4, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
-  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2019, total_count:45, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
-  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2019, total_count:138, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2019, total_count:35, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2020, total_count:48, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
-  {site_number:4, site_name: "Eerwah Vale", lat:-26.47, lon:152.89, year:2020, total_count:14, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
-  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2020, total_count:143, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2020, total_count:15, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2021, total_count:14, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
-  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2021, total_count:41, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2021, total_count:35, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2022, total_count:5, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
-  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2022, total_count:19, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2022, total_count:32, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2023, total_count:6, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
-  {site_number:5, site_name: "MRBBG", lat:-26.71882, lon:153.023028, year:2023, total_count:21, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
-  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2023, total_count:21, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2023, total_count:45, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2024, total_count:8, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2024, total_count:2, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
-  {site_number:5, site_name: "MRBBG", lat:-26.71882, lon:153.023028, year:2024, total_count:31, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
-  {site_number:7, site_name: "Sippy Downs", lat:-26.725281, lon:153.07626, year:2024, total_count:73, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2024, total_count:48, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
-  {site_number:2, site_name: "Coolum", lat:-26.50674, lon:153.091065, year:2025, total_count:8, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
-  {site_number:3, site_name: "Dulong", lat:-26.64, lon:152.9, year:2025, total_count:6, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
-  {site_number:6, site_name: "Maleny", lat:-26.760438, lon:152.851298, year:2025, total_count:33, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
-  {site_number:5, site_name: "MRBBG", lat:-26.71882, lon:153.023028, year:2025, total_count:11, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
-  {site_number:8, site_name: "Yaroomba", lat:-26.550433, lon:153.095711, year:2025, total_count:54, species_name: "Rhinella marina", common_name: "Cane Toad", url: "https://www.frogid.net.au/frogs/rhinella-marina"},
+/* =========================
+DATA STORAGE
+========================= */
+let surveyData = [], siteMeta = {}, speciesMeta = {};
+let currentYear;
+let globalMinCount = Infinity, globalMaxCount = -Infinity;
 
-];
+/* =========================
+UI
+========================= */
+const slider = document.getElementById("yearSlider");
+const yearLabel = document.getElementById("yearLabel");
+const toadToggle = document.getElementById("toadToggle");
 
-/* Map Base layers */
-const map = L.map('map').setView([-26.5,153.02],11);
-const baseLayers = {
-"Esri World Imagery": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution:"&copy; Esri" }),
-  "Carto Positron": L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', { attribution: "&copy; OpenStreetMap & Carto", subdomains:"abcd" })
-  
+document.getElementById("closeIntro").onclick = () => {
+    document.getElementById("intro").style.display = "none";
 };
-baseLayers["Esri World Imagery"].addTo(map);
-const markersLayer = L.layerGroup().addTo(map);
-L.control.layers(baseLayers,{ "Survey Sites": markersLayer }).addTo(map);
 
-/* Site points on map that change colour and size */	
-function getColor(total){
-  if(total<=30) return "#fef0d9";
-  if(total<=60) return "#fdcc8a";
-  if(total<=90) return "#fc8d59";
-  if(total<=120) return "#e34a33";
-  if(total<=150) return "#b30000";
-  return "#7f0000";
+/* =========================
+COLOR SCALE
+========================= */
+function getAbundanceColor(count){
+    if(count <= 30) return "#FFFFB2";
+    else if(count <= 60) return "#FED976";
+    else if(count <= 90) return "#FD8D3C";
+    else if(count <= 120) return "#F03B20";
+    else return "#BD0026";
 }
-function getRadius(total){ return Math.sqrt(total)*2; }
-function groupData(data){
-  const out={};
-  data.forEach(d=>{
-    const key = d.site_number+"_"+d.year;
-    if(!out[key]) out[key]={site_number:d.site_number, site_name:d.site_name, lat:d.lat, lon:d.lon, year:d.year, species:[]};
-    out[key].species.push(d);
-  });
-  return Object.values(out);
-} 
-	
-	/* Update site markers with the cane toad remover */
-function updateMarkers(year){
-  markersLayer.clearLayers();
-  const removeCaneToad = document.getElementById("removeCaneToad").checked;
-  let filtered = surveyData.filter(d=>d.year==year);
-  if(removeCaneToad) filtered = filtered.filter(d=>d.common_name !== "Cane Toad");
-  const grouped = groupData(filtered);
-  grouped.forEach(site=>{
-    const total = site.species.reduce((s,v)=>s+v.total_count,0);
-    let popup = `<b>${site.site_name}</b><br>Year: ${site.year}<br><ul>`;
-    site.species.forEach(s=>{
-      popup += `<li><b>${s.common_name}</b><br><i>${s.species_name}</i><br>Count: ${s.total_count} [<a href="${s.url}" target="_blank">More info</a>]</li>`;
+
+/* =========================
+LOAD DATA
+========================= */
+Promise.all([d3.csv(SURVEY_URL), d3.csv(SITE_META_URL), d3.csv(SPECIES_META_URL)])
+.then(initApp);
+
+function initApp(data){
+    // Load species metadata
+    data[2].forEach(d => {
+        const key = d.species_name.trim();
+        speciesMeta[key] = {
+            common_name: d.common_name.trim(),
+            url: d.url.trim(),
+            image: d.image.trim(),
+            image_credit: d.image_credit.trim(),
+            iucn: d.iucn.trim()
+        };
     });
-    popup += `</ul>`;
-    L.circleMarker([site.lat,site.lon],{
-      radius:getRadius(total),
-      fillColor:getColor(total),
-      color:"#000",
-      weight:2,
-      fillOpacity:0.65
-    }).bindPopup(popup).addTo(markersLayer);
-  });
+
+    // Load survey data
+    surveyData = data[0]
+      .filter(d => d.site_name && d.species_name && d.year)
+      .map(d => ({
+          site_name: d.site_name.trim(),
+          species_name: d.species_name.trim(),
+          common_name: d.common_name.trim(),
+          year: +d.year,
+          total_count: +d.total_count
+      }));
+
+    // Load site metadata
+    data[1].forEach(d => {
+        siteMeta[d.site_name.trim()] = {
+            ...d,
+            lat: +d.lat,
+            lon: +d.lon,
+            description: d.description,
+            image: d.image
+        };
+    });
+
+    // Determine min/max counts
+    surveyData.forEach(d => {
+        if(d.total_count < globalMinCount) globalMinCount = d.total_count;
+        if(d.total_count > globalMaxCount) globalMaxCount = d.total_count;
+    });
+
+    // Set up slider
+    const years = surveyData.map(d => d.year);
+    const minYear = Math.min(...years);
+    const maxYear = Math.max(...years);
+    slider.min = minYear;
+    slider.max = maxYear;
+    slider.value = minYear;
+    yearLabel.textContent = minYear;
+    currentYear = minYear;
+
+console.log("Year slider range:", minYear, "to", maxYear);
+
+    slider.addEventListener("input", () => {
+        currentYear = +slider.value;
+        yearLabel.textContent = currentYear;
+        updateMap();
+    });
+
+    toadToggle.addEventListener("change", updateMap);
+
+    createLegend();
+    updateMap();
+
+    // Populate species dropdown
+    populateSpeciesDropdown();
+
+    // Build site buttons
+    buildSiteButtons();
+
+speciesSelect.dispatchEvent(new Event('change'));
 }
 
-/* Year slider */
-const years = surveyData.length ? [...new Set(surveyData.map(d=>d.year))].sort() : [];
-const slider = document.getElementById("slider");
-const yearDisplay = document.getElementById("yearDisplay");
-if(years.length){
-  noUiSlider.create(slider,{ start:[years[0]], step:1, range:{min:years[0], max:years[years.length-1]}, format:{to:v=>Math.round(v), from:v=>Number(v)} });
-  slider.noUiSlider.on("update", val=>{ const y = val[0]; yearDisplay.innerHTML = "Year: "+y; updateMarkers(y); });
-  document.getElementById("removeCaneToad").addEventListener("change",()=>{ updateMarkers(slider.noUiSlider.get()); });
-  updateMarkers(years[0]);
-} else {
-
-  yearDisplay.innerText = "Year";
+/* =========================
+LEGEND
+========================= */
+function createLegend(){
+    const ranges = ["0-30","31-60","61-90","91-120","120+"];
+    const colors = ["#FFFFB2","#FED976","#FD8D3C","#F03B20","#BD0026"];
+    let html = "<b>Abundance</b><br>";
+    ranges.forEach((r,i)=>{
+        html += `<div><span class="colorBox" style="background:${colors[i]}"></span>${r}</div>`;
+    });
+    document.getElementById("colorLegend").innerHTML = html;
 }
 
-/* Legend */
-const legend = L.control({position:"bottomright"});
-legend.onAdd=function(){
-  const div = L.DomUtil.create("div","legend");
-  const grades=[0,30,60,90,120,150];
-  const colors=["#fef0d9","#fdcc8a","#fc8d59","#e34a33","#b30000","#7f0000"];
-  for(let i=0;i<colors.length;i++){
-    const label = (i<colors.length-1)? `${grades[i]}–${grades[i+1]}` : `${grades[i]}+`;
-    const row = document.createElement("div"); row.className="legend-row";
-    const box = document.createElement("i"); box.style.background = colors[i];
-    row.appendChild(box); row.appendChild(document.createTextNode(label)); div.appendChild(row);
-  }
-  return div;
-};
-legend.addTo(map);
+/* =========================
+MAP UPDATE
+========================= */
+function updateMap(){
+    // Clear old markers
+    map.eachLayer(l => { if(l instanceof L.CircleMarker) map.removeLayer(l); });
 
-/* Plot UI */
-const plotBtn = document.getElementById("plotsButton");
-const plotWin = document.getElementById("plotWindow");
-const backBtn = document.getElementById("backButton");
-plotBtn.onclick = ()=> plotWin.style.display="block";
-backBtn.onclick = ()=> plotWin.style.display="none";
+    const removeToads = toadToggle.checked;
 
-/* Speceis matadata for the plot */	
-/species metadata/
-const speciesMeta = {
- "Cane Toad": {
-    image: "",
-    credit: "",	
-    common: "Cane Toad",
-    scientific: "Rhinella marina",
-    iucn: "Least Concern"
-  },
-  
- "Copper-backed Toadlet": {
-    image: "",
-	credit: "",
-    common: "Copper-backed Toadlet",
-    scientific: "Pseudophryne raveni",
-    iucn: "Least Concern",
-  },
+    // Aggregate counts per site
+    const sitesThisYear = {};
+    surveyData.forEach(d => {
+        if(d.year !== currentYear) return;
+        if(!sitesThisYear[d.site_name]) sitesThisYear[d.site_name] = 0;
+        if(!(removeToads && d.species_name === "Rhinella marina")) 
+            sitesThisYear[d.site_name] += d.total_count;
+    });
 
-"Eastern Dwarf Tree Frog": {
-    image: "https://raw.githubusercontent.com/Ethann-5/Frog_Map_Assets/main/Liroria%20fallax.jpeg",
-	credit: "",
-    common: "Eastern Dwarf Tree Frog",
-    scientific: "Litoria fallax",
-    iucn: "Least Concern",
-  },
+    Object.keys(sitesThisYear).forEach(site => {
+        const meta = siteMeta[site];
+        if(!meta) return;
 
-"Eastern Sign-bearing Froglet": {
-    image: "",
-credit: "",
-    common: "Eastern Sign-bearing Froglet",
-    scientific: "Crinia parinsignifera",
-    iucn: "Least Concern",
-  },
+        const count = sitesThisYear[site];
+        const radius = 4 + Math.sqrt(count)*3;
+        const color = getAbundanceColor(count);
 
-"Eastern Stony Creek Frog": {
-    image: "",
-credit: "",
-    common: "Eastern Stony Creek Frog",
-    scientific: "Litoria wilcoxii",
-    iucn: "Least Concern",
-  },
+        const marker = L.circleMarker([+meta.lat, +meta.lon], {
+            radius, color, fillColor: color, fillOpacity:0.65, weight:3, opacity: 1, color: "#000"
+        });
 
+        marker.on("click", () => openPopup(site,true));
 
-"Giant Barred Frog": {
-    image: "https://raw.githubusercontent.com/Ethann-5/Frog_Map_Assets/main/Giant_Barred.jpeg",
-credit: "Cameron Taggart",
-    common: "Giant Barred Frog",
-    scientific: "Mixophyes iteratus",
-    iucn: "Vulnerable",
-  },
+        marker.addTo(map);
+    });
+}
 
+/* =========================
+POPUPS
+========================= */
+function openPopup(site, center=true){
+    const meta = siteMeta[site];
+    const rows = surveyData.filter(d =>
+        d.site_name === site && d.year === currentYear
+    );
 
-"Graceful Tree Frog": {
-    image: "https://raw.githubusercontent.com/Ethann-5/Frog_Map_Assets/main/Litoris%20gracilenta.jpeg",
-credit: "Cameron Taggart",
-    common: "Graceful Tree Frog",
-    scientific: "Litoria gracilenta",
-    iucn: "Least Concern",
-  },
+    // Build data HTML
+ let dataHtml = "";
+rows.forEach(d => {
+    const key = d.species_name.trim();
+    const info = speciesMeta[key];
+    const url = info && info.url ? info.url : "#";
 
-
-"Great Barred Frog": {
-    image: "https://raw.githubusercontent.com/Ethann-5/Frog_Map_Assets/main/Great_Barred.jpeg",
-credit: "Cameron Taggart",
-    common: "Great Barred Frog",
-    scientific: "Mixophyes fasciolatus",
-    iucn: "Least Concern",
-  },
-
-  "Green Tree Frog": {
-    image: "https://raw.githubusercontent.com/Ethann-5/Frog_Map_Assets/main/Green_Tree_Frog.jpeg",
-credit: "Cameron Taggart",
-    common: "Green Tree Frog",
-    scientific: "Litoria caerulea",
-    iucn: "Least Concern",
-  },
-
-
-"Pearson's Stream Frog": {
-    image: "",
-credit: "",
-    common: "Pearson's Stream Frog",
-    scientific: "Litoria pearsoniana",
-    iucn: "Least Concern",
-  },
-
-"Peron's Tree Frog": {
-    image: "https://raw.githubusercontent.com/Ethann-5/Frog_Map_Assets/main/peronii.jpeg",
-credit: "Jono Hooper",
-    common: "Peron's Tree Frog",
-    scientific: "Litoria peronii",
-    iucn: "Least Concern",
-  },
-
-"Red Tree Frog": {
-    image: "",
-credit: "",
-    common: "Red Tree Frog",
-    scientific: "Litoria dentata",
-    iucn: "Least Concern",
-  },
-
-
-"Robust Bleating Tree Frog": {
-    image: "",
-credit: "",
-    common: "Robust Bleating Tree Frog",
-    scientific: "Litoria rubella",
-    iucn: "Least Concern",
-  },
-
-"Striped Marsh Frog": {
-    image: "",
-credit: "",
-    common: "Striped Marsh Frog",
-    scientific: "Limnodynastes peronii",
-    iucn: "Least Concern",
-  },
-
-"Striped Rocket Frog": {
-    image: "",
-credit: "",
-    common: "Striped Rocket Frog",
-    scientific: "Litoria nasuta",
-    iucn: "Least Concern",
-  },
-
-"Striped Rocket Frog": {
-    image: "",
-credit: "",
-    common: "Striped Rocket Frog",
-    scientific: "Litoria nasuta",
-    iucn: "Least Concern",
-  },
-
-"Superb Banjo Frog": {
-    image: "",
-credit: "",
-    common: "Superb Banjo Frog",
-    scientific: "Limnodynastes terraereginae",
-    iucn: "Least Concern",
-  },
-
-"Tusked Frog": {
-    image: "",
-credit: "",
-    common: "Tusked Frog",
-    scientific: "Adelotus brevis",
-    iucn: "Least Concern",
-  },
-
-
-"Tyler's Tree Frog": {
-    image: "https://raw.githubusercontent.com/Ethann-5/Frog_Map_Assets/main/tylers laughing.jpeg",
-credit: "Emily Thompson ",
-    common: "Tyler's Tree Frog",
-    scientific: "Litoria tyleri",
-    iucn: "Least Concern",
-  },
-
-"Wallum Froglet": {
-    image: "",
-credit: "",
-    common: "Wallum Froglet",
-    scientific: "Crinia tinnula",
-    iucn: "Least Concern",
-  },
-
-"Wallum Rocket Frog": {
-    image: "",
-credit: "",
-    common: "Wallum Rocket Frog",
-    scientific: "Litoria freycineti",
-    iucn: "Least Concern",
-  },
-
-"Wallum Sedge Frog": {
-    image: "https://raw.githubusercontent.com/Ethann-5/Frog_Map_Assets/main/Litoria%20olongburensis.jpeg",
-credit: "Indra Bone",
-    common: "Wallum Sedge Frog",
-    scientific: "Litoria olongburensis",
-    iucn: "Least Concern",
-  },
-
-
-};
-
-/* Plot species dropdown menu */
-const speciesSelect = document.getElementById("speciesSelect");
-speciesSelect.innerHTML = '<option value="ALL">All species</option>'; 
-[...new Set(surveyData.map(d => d.common_name))].sort().forEach(s => {
-  speciesSelect.innerHTML += `<option value="${s}">${s}</option>`;
+    dataHtml += `
+    <div>
+        ${info?.image ? `<img src="${info.image}" alt="${d.common_name}">` : ""}
+        <div>
+            <b>${d.common_name}</b><br>
+            <i>${d.species_name}</i><br>
+            Count: ${d.total_count}<br>
+            <a href="${url}" target="_blank" rel="noopener noreferrer">More info</a>
+        </div>
+    </div>
+    `;
 });
 
+    const html = `
+    <div style="max-width:500px; font-family:Arial, sans-serif; border-radius:10px; box-shadow:0 4px 12px rgba(0,0,0,0.25); padding:12px;">
+        <div style="text-align:right;">
+            <button id="popupCloseBtn" style="cursor:pointer; background:none; border:none; font-size:18px;">✕</button>
+        </div>
+       <div class="tabs" style="margin-bottom:10px;">
+    <span class="tab active" onclick="switchTab(event,'site')">Site description & Image</span>
+    <span class="tab" onclick="switchTab(event,'data')">Data</span>
+</div>
+
+<div id="site" class="tabContent active">
+    <img src="${meta.image}" style="width:100%; max-width:420px; height:auto; border-radius:8px; display:block; margin:0 auto 4px auto;">
+    <p style="margin:4px 0 0 0;">${meta.description}</p>
+</div>
+
+<div id="data" class="tabContent">${dataHtml}</div>
+    </div>
+    `;
+
+const popup = L.popup({ 
+    maxWidth: 420,
+    minWidth: 420,
+    autoPanPadding: [20, 20],
+    closeButton: false
+})
+.setLatLng([+meta.lat,+meta.lon])
+.setContent(html)
+.openOn(map);
+
+    // Center popup on screen
+    if(center){
+        setTimeout(()=>{
+            const popupEl = popup.getElement();
+            if(popupEl){
+                const popupHeight = popupEl.offsetHeight;
+                const mapHeight = map.getContainer().offsetHeight;
+                const offset = (mapHeight/2)-(popupHeight/2);
+                const latlng = popup.getLatLng();
+                const point = map.latLngToContainerPoint(latlng);
+                const newPoint = L.point(point.x, point.y - offset);
+                const newLatLng = map.containerPointToLatLng(newPoint);
+                map.setView(newLatLng, map.getZoom(), { animate:true });
+            }
+        },50);
+    }
+
+    // Close button
+    setTimeout(()=>{
+        const btn = document.getElementById("popupCloseBtn");
+        if(btn) btn.addEventListener("click", ()=>map.closePopup(popup));
+    },50);
+}
+/* =========================
+TAB SWITCH
+========================= */
+function switchTab(evt, id){
+    document.querySelectorAll(".tabContent").forEach(t => t.classList.remove("active"));
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+
+    document.getElementById(id).classList.add("active");
+    evt.target.classList.add("active");
+}
+
+/* =========================
+PLOT WINDOW CONTROLS
+========================= */
+
+const plotBtn = document.getElementById("plotsButton");
+const plotWindow = document.getElementById("plotWindow");
+const backBtn = document.getElementById("backButton");
+
+plotBtn.onclick = () => plotWindow.style.display = "block";
+backBtn.onclick = () => plotWindow.style.display = "none";
+
+/* =========================
+SPECIES DROPDOWN
+========================= */
+
+const speciesSelect = document.getElementById("speciesSelect");
+
+function populateSpeciesDropdown(){
+    // Clear previous options except the default "ALL"
+    speciesSelect.innerHTML = '<option value="ALL">All Species</option>';
+
+    const species = [...new Set(surveyData.map(d=>d.common_name))].sort();
+
+    species.forEach(s=>{
+        const option = document.createElement("option");
+        option.value = s;
+        option.textContent = s;
+        speciesSelect.appendChild(option);
+    });
+}
+
+/* =========================
+SITE BUTTONS WITH YEAR RANGES & SPECIES FILTER
+========================= */
 const siteButtonsDiv = document.getElementById("siteButtons");
+const palette = ["#1f77b4","#ff7f0e","#2ca02c","#d62728","#9467bd",
+"#8c564b","#e377c2","#7f7f7f","#bcbd22","#17becf"];
+const siteColors = {};
+
+function buildSiteButtons(selectedSpecies = "ALL") {
+    siteButtonsDiv.innerHTML = ""; // clear previous buttons
+
+    const siteNames = [...new Set(surveyData.map(d => d.site_name))].sort();
+
+    siteNames.forEach((site,i) => {
+        siteColors[site] = palette[i % palette.length];
+
+        const wrap = document.createElement("div");
+        wrap.className = "siteWrap";
+
+        // Find all years the site has data for the selected species
+        let siteYears = surveyData
+            .filter(d => d.site_name === site && (selectedSpecies === "ALL" || d.common_name === selectedSpecies))
+            .map(d => d.year);
+
+        const hasData = siteYears.length > 0;
+
+        // Create button
+        const btn = document.createElement("div");
+        btn.className = "siteBtn";
+        btn.textContent = site;
+        btn.style.borderColor = siteColors[site];
+        if(!hasData) btn.classList.add("disabled");
+
+        btn.onclick = () => {
+            if(!hasData) return; // cannot select
+            btn.classList.toggle("selected");
+            btn.style.background = btn.classList.contains("selected") ? siteColors[site] : "white";
+            updateFullPlot();
+        };
+
+        // Year range label
+        const yearSpan = document.createElement("div");
+        yearSpan.className = "siteYears";
+        yearSpan.textContent = hasData ? `${Math.min(...siteYears)}–${Math.max(...siteYears)}` : "-";
+        wrap.appendChild(btn);
+        wrap.appendChild(yearSpan);
+
+        siteButtonsDiv.appendChild(wrap);
+    });
+}
+
+/* =========================
+UPDATE SITE BUTTONS WHEN SPECIES CHANGES
+========================= */
+speciesSelect.addEventListener("change", ()=>{
+
+    const sp = speciesSelect.value;
+
+   
+    buildSiteButtons(sp);
+
+    updateFullPlot();
+
+    const match = Object.values(speciesMeta)
+        .find(v => v.common_name === sp);
+
+    if(match){
+        speciesImage.src = match.image;
+        speciesImage.style.display = "block";
+
+        speciesCommon.textContent = match.common_name;
+        speciesScientific.textContent = match.species_name || ""; 
+        speciesIUCN.textContent = "IUCN: " + match.iucn;
+        speciesCredit.textContent = match.image_credit ? `📷 ${match.image_credit}` : "";
+    }
+
+    // For "ALL" species blurb
+    if(sp === "ALL"){
+        speciesCommon.textContent = "All Species";
+        speciesScientific.textContent = "";  // no scientific name
+        speciesImage.style.display = "none";
+        speciesIUCN.textContent = "";
+        speciesCredit.textContent = "📷 All image credits combined";
+    }
+});
+/* =========================
+CHART
+========================= */
+
+const ctx = document.getElementById("fullPlot").getContext("2d");
+
+let fullChart = new Chart(ctx,{
+type:"bar",
+data:{labels:[],datasets:[]},
+options:{
+responsive:true,
+maintainAspectRatio:false,
+plugins:{legend:{display:true}},
+scales:{
+x:{title:{display:true,text:"Year"},
+grid: { display: false }},
+y:{beginAtZero:true,title:{display:true,text:"Count"},
+ grid: { drawTicks: true, color: "#ccc" } }
+}
+}
+});
+
+/* =========================
+UPDATE PLOT
+========================= */
+
+function updateFullPlot(){
+
+const sp = speciesSelect.value;
+
+const selectedSites = [...document.querySelectorAll(".siteBtn.selected")]
+.map(b=>b.textContent);
+
+const years = [...new Set(surveyData.map(d=>d.year))].sort();
+
+const datasets=[];
+
+selectedSites.forEach(site=>{
+
+const data = years.map(y=>{
+
+if(sp==="ALL"){
+
+return surveyData
+.filter(d=>d.site_name===site && d.year===y)
+.reduce((sum,v)=>sum+v.total_count,0);
+
+}
+
+else{
+
+return surveyData
+.filter(d=>d.site_name===site && d.year===y && d.common_name===sp)
+.reduce((sum,v)=>sum+v.total_count,0);
+
+}
+
+});
+
+datasets.push({
+label:site,
+data:data,
+backgroundColor:siteColors[site],
+borderColor:"#000",
+borderWidth:1
+});
+
+});
+
+fullChart.data.labels = years;
+fullChart.data.datasets = datasets;
+fullChart.update();
+
+}
+
+/* =========================
+SPECIES INFO PANEL
+========================= */
+
 const speciesImage = document.getElementById("speciesImage");
 const speciesCommon = document.getElementById("speciesCommon");
 const speciesScientific = document.getElementById("speciesScientific");
 const speciesIUCN = document.getElementById("speciesIUCN");
 const speciesCredit = document.getElementById("speciesCredit");
 
+speciesSelect.addEventListener("change", ()=>{
 
-function populateSpeciesDropdown(){
-  const species = [...new Set(surveyData.map(d=>d.common_name))].sort();
-  speciesSelect.innerHTML = `<option value="">Select species</option><option value="ALL">All Species</option>`;
-  species.forEach(s => speciesSelect.innerHTML += `<option value="${s}">${s}</option>`);
-}
+    updateFullPlot();
+
+    const sp = speciesSelect.value;
+
+    const match = Object.values(speciesMeta)
+        .find(v => v.common_name === sp);
+
+    if(match){
+        // Show the species image
+        speciesImage.src = match.image;
+        speciesImage.style.display = "block";
+
+        // Set common and scientific names
+        speciesCommon.textContent = match.common_name;
+        speciesScientific.textContent = match.species_name || "";  // italicized
+
+        speciesIUCN.textContent = "IUCN: " + match.iucn;
+
+        // ALWAYS show 📷 next to image credit
+        speciesCredit.textContent = match.image_credit ? `📷 ${match.image_credit}` : "";
+    }
+
+    // "ALL" species blurb
+    if(sp === "ALL"){
+        speciesCommon.textContent = "Frogs of the Region";
+        speciesScientific.textContent = "";  
+        speciesImage.style.display = "none";
+        speciesIUCN.textContent = "Queensland is home to many species of frog, all of which play critical ecological roles within their ecosystems, including insect control, acting as prey for many native animals and indicating an area's overall health. Use the graph to visualise Ecollaboration's frog surveying efforts over the years.";
+        speciesCredit.textContent = " ";
+    }
+});
+/* =========================
+INITIALISE PLOTS AFTER DATA LOAD
+========================= */
+
+setTimeout(()=>{
+
 populateSpeciesDropdown();
 
+},1000);
 
-const siteYearMap = {};
-[...new Set(surveyData.map(d=>d.site_name))].forEach(site=>{
-  const yrs = [...new Set(surveyData.filter(d=>d.site_name===site).map(r=>r.year))].sort();
-  siteYearMap[site] = yrs;
-});
-
-/* Stop site selectin if species has not breen spotted */
-const siteNames = [...new Set(surveyData.map(d=>d.site_name))].sort();
-const siteColors = {};
-const palette = ["#1f77b4","#ff7f0e","#2ca02c","#d62728","#9467bd","#8c564b","#e377c2","#7f7f7f","#bcbd22","#17becf"];
-siteNames.forEach((site,i)=>{
-  siteColors[site] = palette[i % palette.length];
-  const wrap = document.createElement("div");
-  wrap.className = "siteWrap";
-  const btn = document.createElement("div");
-  btn.className = "siteBtn";
-  btn.textContent = site;
-  btn.style.borderColor = siteColors[site];
-  btn.onclick = ()=>{
-    if(btn.classList.contains("disabled")) return;
-    btn.classList.toggle("selected");
-    btn.classList.contains("selected") ? btn.style.background = siteColors[site] : btn.style.background = "#fff";
-    updateFullPlot();
-  };
-  const yrs = siteYearMap[site] || [];
-  const yrText = yrs.length ? (yrs.length===1 ? `${yrs[0]}` : `${Math.min(...yrs)}–${Math.max(...yrs)}`) : "";
-  const yrsElem = document.createElement("div");
-  yrsElem.className = "siteYears";
-  yrsElem.textContent = yrText;
-  wrap.appendChild(btn);
-  wrap.appendChild(yrsElem);
-  siteButtonsDiv.appendChild(wrap);
-});
-
-
-const ctxFull = document.getElementById("fullPlot").getContext("2d");
-let fullChart = new Chart(ctxFull, {
-  type: "bar",
-  data: { labels: [], datasets: [] },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: true },
-      tooltip: {
-        enabled: true,
-        mode: 'nearest',
-        intersect: true,
-        callbacks: {
-          label: function(context) {
-            const datasetLabel = context.dataset.label || '';
-            const value = context.raw;
-            const year = context.label;
-            return `${datasetLabel} - Year: ${year} | Count: ${value}`;
-          }
-        }
-      }
-    },
-    scales: {
-      x: {
-        stacked: false,
-        title: { display: true, text: 'Year' },
-        grid: { drawTicks:true, color: 'black', tickLength: 4, drawOnChartArea:false }
-      },
-      y: { beginAtZero: true, title: { display:true, text: 'Count' } }
-    }
-  }
-});
-
-/* All species data and UI */
-function updateSpeciesInfo(){
-  const sp = speciesSelect.value;
-
- 
-  if(sp === "ALL"){
-    speciesImage.style.display = "none";
-    speciesCommon.textContent = "Frogs of the Region";
-    speciesScientific.textContent = "";
-    speciesIUCN.textContent = "";
-    speciesCredit.textContent = "";
-    
-   
-    const description = document.getElementById("speciesDescription");
-    if(description){
-      description.innerHTML = `
-        Queensland is home to many species of frog, all of which play critical ecological roles within their ecosystems, including insect control, acting as prey for many native animals and indicating an area's overall health. Use the graph to visualise Ecollaboration's frog surveying efforts over the years.
-      `;
-    }
-    return;
-  }
-
- /* If 1 speceis is selected  */
-  const meta = speciesMeta[sp];
-	
-/* Image alignment when species is sleceted */
-  if(meta && meta.image){
-    speciesImage.src = meta.image;
-    speciesImage.style.display = "block";
-    speciesImage.style.objectFit = "cover"; 
-    speciesImage.style.width = "100%";
-    speciesImage.style.maxWidth = "260px";
-    speciesImage.style.height = "200px";    
-    speciesImage.style.borderRadius = "10px";
-  } else {
-    speciesImage.style.display = "none";
-    speciesImage.src = "";
-  }
-
-
-  speciesCommon.textContent = meta ? meta.common || sp : sp;
-  speciesScientific.textContent = meta ? meta.scientific || "" : "";
-  speciesIUCN.textContent = meta ? `IUCN: ${meta.iucn || "Unknown"}` : "";
-  speciesCredit.textContent = meta && meta.credit ? `📷 Photo: ${meta.credit}` : "";
-
-
-  const description = document.getElementById("speciesDescription");
-  if(description) description.innerHTML = "";
-}
-
-
-function updateFullPlot(){
-  const sp = speciesSelect.value;
-  const allSiteBtns = Array.from(document.querySelectorAll(".siteBtn"));
-
- 
-  allSiteBtns.forEach(btn=>{
-    const site = btn.textContent;
-    if(sp && sp !== "ALL"){
-      const hasData = surveyData.some(d=>d.site_name===site && d.common_name===sp);
-      if(!hasData){
-        btn.classList.add("disabled");
-        btn.classList.remove("selected");
-        btn.style.background="#fff";
-      } else {
-        btn.classList.remove("disabled");
-      }
-    } else {
-
-      btn.classList.remove("disabled");
-    }
-  });
-
-  const selectedSites = allSiteBtns.filter(b=>b.classList.contains("selected")).map(b=>b.textContent);
-
-  const years = [...new Set(surveyData.map(d=>d.year))].sort();
-  const datasets = [];
-
-  allSiteBtns.filter(b=>b.classList.contains("selected")).forEach(siteBtn=>{
-    const site = siteBtn.textContent;
-    const data = years.map(y=>{
-      if(sp==="ALL"){
-        return surveyData.filter(d=>d.site_name===site && d.year===y).reduce((sum,v)=>sum+v.total_count,0);
-      } else {
-        return surveyData.filter(d=>d.site_name===site && d.common_name===sp && d.year===y).reduce((sum,v)=>sum+v.total_count,0);
-      }
-    });
-    datasets.push({label:site, data:data, backgroundColor:siteColors[site], borderColor:"#000", borderWidth:1});
-  });
-
-  fullChart.data.labels = years;
-  fullChart.data.datasets = datasets;
-  fullChart.update();
-}
-
-speciesSelect.addEventListener("change", ()=>{
-  updateFullPlot();
-  updateSpeciesInfo();
-});
 
 </script>
 </body>
 </html>
-
