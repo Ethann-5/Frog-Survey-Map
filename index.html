@@ -3,8 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>ECOllaboration Frog Survey Map</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://d3js.org/d3.v7.min.js"></script>
@@ -26,7 +25,7 @@ h2, h3 {
     top: 0;
     left: 240px;
     width: calc(100% - 240px);
-    height: 100vh; 
+    height: 100dvh; 
     min-height: 500px; 
 }
 /* ===== SIDEBAR ===== */
@@ -53,7 +52,7 @@ h2, h3 {
     width: auto;         
     padding-right: 10px; 
 }
-/* HEADER */
+
 .panelHeader {
     display: flex;
     align-items: center;
@@ -102,7 +101,7 @@ h2, h3 {
     color: #333;
 }
 
-/* SECTION */
+
 .panelSection h3 {
     margin: 0 0 10px 0;
     font-size: 14px;
@@ -111,7 +110,7 @@ h2, h3 {
     letter-spacing: 0.5px;
 }
 
-/* LINKS */
+
 .panelLinks {
     display: flex;
     flex-direction: column;
@@ -173,7 +172,9 @@ h2, h3 {
 }
 
 
-/* ICON */
+
+
+
 .sideBtn img {
     width: 22px;
     height: 22px;
@@ -185,13 +186,13 @@ h2, h3 {
     margin: 0 auto;
 }
 
-/* TEXT */
+
 .sideBtn span {
     white-space: nowrap;
 }
 
 
-/* COLLAPSED SIDEBAR BUTTONS */
+
 #sidebar.collapsed .sideBtn {
     justify-content: center; 
     gap: 0;                   
@@ -204,12 +205,12 @@ h2, h3 {
 #sidebar.collapsed .sideBtn .iconEmoji {
     display: inline-flex !important; 
 }
-/* MAP SHIFT */
+
 #map {
     position: absolute;
     left: 240px;
     width: calc(100% - 240px);
-    height: 100%;
+    height: 100dvh;
 }
 
 #map {
@@ -330,7 +331,38 @@ h2, h3 {
     cursor: pointer;
     z-index: 15;
     font-size: 14px;
-    display: none;
+    display: block;   
+    top: 8px;
+    left: 8px;       
+    right: auto;
+}
+
+#extraSpace h3 {
+    margin: 6px 0 2px 0;
+}
+
+#extraSpace p {
+    margin: 2px 0;
+    line-height: 1.2;
+}
+
+#extraSpace {
+    gap: 4px;
+}
+
+#speciesSelect {
+    width:100%;
+    padding:8px;
+    border-radius:8px;
+    border:1px solid #ddd;
+    margin-bottom:10px;
+    font-size: 16px;
+}
+
+.siteBtn {
+    border-radius:8px;
+    font-size:13px;
+    padding:6px 10px;
 }
 
 
@@ -342,18 +374,19 @@ h2, h3 {
     max-height: 400px;
     overflow: hidden;
 }
+
 .carousel img {
-    max-width: 100%;
     width: 100%;
-    height: auto;        
-    max-height: 400px;   
-    object-fit: contain; 
+    height: 100%;
+    object-fit: cover;   
     border-radius: 8px;
     position: absolute;
     top: 0; left: 0;
     opacity: 0;
     transition: opacity 0.3s ease;
 }
+
+
 .carousel img.active {
     opacity:1;
     position:absolute;
@@ -398,7 +431,7 @@ POPUP TABS
 }
 
 #data.tabContent {
-    max-height: 400px;      
+    max-height: 250px;      
     overflow-y: auto;
     overflow-x: hidden;
     font-size: 18px;       
@@ -406,14 +439,6 @@ POPUP TABS
 }
 
 
-#data img {
-    width: 120px;            
-    height: auto;
-    float: left;
-    margin-right: 12px;
-    margin-bottom: 10px;
-    border-radius: 8px;
-}
 
 
 #site img {
@@ -444,15 +469,158 @@ POPUP TABS
     margin: 0 auto 8px auto;
 }
 .leaflet-popup-content-wrapper {
-    padding: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-    border-radius: 12px;
-    background: #fff;
+    width: auto !important;
+    max-width: 95vw !important;
+    touch-action: pan-y;
 }
+
+
+.leaflet-popup-content-wrapper {
+    border-radius: 12px;
+    padding: 0;
+    overflow: hidden;
+    transform: scale(0.85); 
+    transform-origin: bottom center; 
+}
+
+
+.leaflet-popup-content {
+    margin: 0;
+    width: auto !important;
+}
+
+
+.leaflet-popup {
+    margin-bottom: 5px; 
+}
+
+/* MOBILE IMPROVEMENTS */
+@media (max-width: 768px) {
+
+  #sidebar {
+        position: fixed;
+        bottom: 0;
+        top: auto;
+        left: 0;
+        width: 100%;
+        height: 70px; 
+        flex-direction: row;
+        overflow-x: auto;
+        z-index: 2000;
+        background: #fff; 
+        border-left: none;
+    }
+
+
+
+  #map {
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: calc(100dvh - 70px); 
+    }
+
+
+    .leaflet-popup-content-wrapper,
+    .leaflet-popup-tip {
+        width: 100% !important;
+        max-width: 100% !important;
+        height: 100% !important;
+        max-height: 100% !important;
+        border-radius: 0 !important;
+    }
+
+    .leaflet-popup-content {
+        font-size: 13px;
+       height: 100%;
+        overflow-y: auto;
+    }
+
+.sideBtn {
+    min-height: 48px;
+    font-size: 16px;
+}
+
+.popup-tab {
+    min-height: 44px;
+    font-size: 14px;
+}
+
+button {
+    min-height: 44px;
+}
+
+
+
+   .leaflet-popup-close-button {
+        top: 10px;
+        right: 10px;
+        font-size: 20px;
+    }
+
+@media (max-width: 768px) {
+  #sidebar {
+      height: 65px;
+      justify-content: space-around;
+      padding: 0;
+  }
+
+  .sideBtn {
+      flex-direction: column;
+      font-size: 11px;
+      padding: 6px 4px;
+  }
+
+  .sideBtn span.iconEmoji {
+      font-size: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+
+ 
+  .leaflet-popup {
+      position: fixed !important;
+      bottom: 0;
+      left: 0 !important;
+      transform: none !important;
+      width: 100vw !important;
+      margin: 0;
+  }
+
+  .leaflet-popup-content-wrapper {
+      border-radius: 16px 16px 0 0 !important;
+      max-height: 75vh;
+      overflow-y: auto;
+  }
+
+  .leaflet-popup-close-button {
+      top: 12px;
+      right: 12px;
+  }
+}
+
+    .popup-body {
+        max-height: 50vh;
+        overflow-y: auto;
+    }
+
+    .popup-tabs {
+        position: sticky;
+        top: 0;
+        background: white;
+        z-index: 5;
+    }
+}
+
+
+
+
+
 .leaflet-popup-content { margin: 0; }
 .leaflet-popup-tip { background: #fff; }
 
-/* CONTROLS */
+
 #controls{
 position:absolute;
 top:20px;  
@@ -468,7 +636,7 @@ z-index:1200;
 #yearSlider{ width:220px; display:block; margin:0 auto; }
 .controlRow{ margin-bottom:6px; text-align:center; }
 
-/* PLOT WINDOW */
+
 #plotsButton{
 display:none;
 position:absolute;
@@ -483,27 +651,46 @@ z-index:600;
 font-weight:bold;
 }
 #plotWindow{
-display:none;
-position:fixed;
-top:0;
-left:0;
-width:100%;
-height:100%;
-background:white;
-z-index:3000;
-padding:20px;
-overflow:auto;
+    display:none;
+    position:fixed;
+    top:0;
+box-sizing: border-box;
+    right:0;
+    width:420px;
+    height:100%;
+    background:#ffffff;
+    z-index:3000;
+    box-shadow:-4px 0 20px rgba(0,0,0,0.15);
+    padding:16px;
+    overflow-y:auto;
+    animation: slideIn 0.25s ease;
+@media (max-width: 600px) {
+    #plotWindow {
+        width: 100%;
+        height: 100%;
+        left: 0;
+        right: 0;
+        border-radius: 0;
+    }
 }
+
+}
+
 #backButton{
-background:#0077cc;
-color:white;
-padding:8px 14px;
-border-radius:6px;
-border:none;
-cursor:pointer;
-margin-bottom:12px;
-font-weight:bold;
+    background:#2c7be5;
+    color:white;
+    padding:8px 14px;
+    border-radius:8px;
+    border:none;
+    cursor:pointer;
+    margin-bottom:12px;
+    font-weight:500;
 }
+
+#plotWindow {
+    animation: slideIn 0.25s ease;
+}
+
 #siteButtons{
 margin-bottom:15px;
 display:flex;
@@ -511,7 +698,7 @@ flex-wrap:wrap;
 gap:6px;
 }
 
-/* Sidebar button */
+
 .sideBtn {
     display: flex;
     align-items: center;  
@@ -529,7 +716,7 @@ gap:6px;
     transition: all 0.2s ease;
 }
 
-/* Sidebar button icon */
+
 .sideBtn img, .sideBtn span.iconEmoji {
     width: 24px;       
     height: 24px;
@@ -559,6 +746,8 @@ gap:6px;
 
 
 
+
+
 .sideBtn.active {
     background: rgba(0, 119, 204, 0.15);
     border: 1px solid rgba(0, 119, 204, 0.5);
@@ -580,14 +769,6 @@ border:1px solid #ccc;
 cursor:pointer;
 background:white;
 }
-#plotLogo {
-    position: absolute;
-    top: 15px;
-    right: 25px;
-    height: 100px;
-    z-index: 5000;
-    object-fit: contain;	
-}
 
 .siteBtn.selected{ color:white; }
 .siteBtn.disabled{ opacity:0.4; pointer-events:none; }
@@ -596,34 +777,33 @@ font-size:11px;
 color:#444;
 margin-left:4px;
 }
-#plotFlexContainer{
-display:flex;
-width:100%;
-height:80vh;
-gap:20px;
+#plotFlexContainer {
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+    height:auto;
 }
-#plotContent{ flex:4; }
-#extraSpace {
-    flex: 2;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    position: relative; 
+
+#plotContent {
+    height:300px;
+    background:#fafbfc;
+    padding:10px;
+    border-radius:10px;
 }
 canvas{
 width:100%;
 height:100%;
 }
-/* legend */
+
 #colorLegend{
-position:absolute; bottom:20px; right:20px;
+position:absolute; bottom:50px; right:10px;
 background:white; padding:10px;
 border-radius:6px; font-size:13px;
 box-shadow:0 2px 6px rgba(0,0,0,0.3);
 z-index:500;
 }
 .colorBox { display:inline-block; width:20px; height:20px; margin-right:6px; vertical-align:middle; }
-/* intro modal */
+
 #intro{
 position:fixed; top:0; left:0;
 width:100%; height:100%;
@@ -645,8 +825,6 @@ text-align:center;
 /* =========================
 RESPONSIVE DESIGN
 ========================= */
-
-
 @media (max-width: 1200px) {
     #plotFlexContainer {
         flex-direction: column;
@@ -669,8 +847,15 @@ RESPONSIVE DESIGN
 
 @media (max-width: 900px) {
     #sidebar {
-        width: 80px;
-    }
+    position: fixed;
+    bottom: 0;
+    top: auto;
+    width: 100%;
+    height: 70px;
+    flex-direction: row;
+    overflow-x: auto;
+    z-index: 2000;
+}
 
     #map {
         left: 80px;
@@ -712,11 +897,426 @@ RESPONSIVE DESIGN
     }
 
     #plotContent {
-        height: 40vh;
+        height: 20vh;
     }
 }
 
+/* =========================
+POPUP UI 
+========================= */
+.leaflet-popup-content-wrapper {
+    border-radius: 14px;
+    padding: 0;
+    overflow: hidden;
+}
 
+.leaflet-popup-content {
+    margin: 0;
+    font-family: "Poppins", sans-serif;
+}
+
+.leaflet-popup-tip {
+    display: none;
+}
+
+
+.popup-card {
+    border-radius: 14px;
+    overflow: hidden;
+    background: #fff;
+}
+
+
+.popup-carousel {
+    width: 100%;
+    height: 220px;
+    overflow: hidden;
+}
+
+.popup-carousel img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+
+.popup-header {
+    padding: 12px 14px 6px;
+}
+
+.popup-title {
+    font-size: 18px;
+}
+
+.popup-subtitle {
+    font-size: 12px;
+    color: #666;
+}
+
+.popup-body {
+    padding: 12px 14px;
+     background: #fafbfc;
+}
+
+
+
+.popup-meta {
+    padding: 0 14px 8px;
+    font-size: 13px;
+}
+
+
+.popup-tabs {
+    display: flex;
+    border-bottom: 1px solid #eee;
+}
+
+
+.popup-tab {
+    flex: 1;
+    padding: 8px;
+    text-align: center;
+    font-size: 13px;
+    cursor: pointer;
+    color: #666;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s ease;
+   min-height: 36px;
+display: flex;
+align-items: center;
+justify-content: center;
+}
+
+.popup-tab.active {
+    font-weight: 600;
+    color: #000;
+    border-bottom: 2px solid #2c7be5;
+}
+
+.popup-tab:hover {
+    background: #f8f9fa;
+}
+
+
+.popup-body {
+    padding: 8px 12px;
+}
+
+
+.species-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.leaflet-popup {
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.chip {
+    background: #f1f3f5;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.chip:hover {
+    background: #e4e7eb;
+}
+.popup-chart {
+    height: 50px;
+    margin-top: 8px;
+}
+.leaflet-popup-content-wrapper {
+    animation: popupFade 0.25s ease;
+}
+
+@keyframes popupFade {
+    from {
+        opacity: 0;
+        transform: translateY(10px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.data-row {
+    display: flex;
+    align-items: center; 
+    gap: 8px;           
+    margin-bottom: 4px;  
+    padding-bottom: 4px; 
+    border-bottom: 1px solid #eee;
+}
+.data-img {
+    width: 60px;
+    height: 60px;
+    flex-shrink: 0;
+}
+
+.data-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+    display: block;
+}
+
+.data-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+    line-height: 1.1;    
+    gap: 0;            
+    font-size: 13px;    
+#intro {
+    position: fixed; 
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.75); 
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    z-index: 5000; 
+    padding: 15px; 
+    box-sizing: border-box;
+}
+#introBox {
+    background: white;
+    padding: 25px; 
+    max-width: 600px;   
+    width: 100%;
+    max-height: 90vh; 
+    border-radius: 12px;
+    position: relative;
+    text-align: center;
+    overflow-y: auto;
+    box-sizing: border-box;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+@media (max-width: 600px) {
+    #introBox {
+        padding: 20px 15px;
+        width: 95%;
+    } 
+    #introBox h2 {
+        font-size: 1.2rem;
+        margin-top: 10px;
+    }
+    #introBox p {
+        font-size: 13px; 
+        line-height: 1.4;
+    }
+    #introBox img {
+        height: 45px !important; 
+    }
+}
+.tabContent {
+    display: none;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: all 0.2s ease;
+}
+
+.tabContent.active {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+}
+.more-info {
+    font-size: 10px;
+    color: #2c7be5;
+    text-decoration: none;
+}
+.more-info:hover {
+    text-decoration: underline;
+}
+@media (max-width: 768px) 
+    #map {
+        top: 0 !important;
+        height: calc(100dvh - 70px) !important; 
+    }
+    body, html {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+    }
+    #sidebarHeader {
+        display: none !important; 
+    }
+}
+
+@media (max-width: 768px) {
+  .leaflet-popup {
+    position: fixed !important;
+    bottom: 20px !important; 
+    left: 50% !important;
+    transform: translateX(-50%) !important; 
+    margin: 0 !important;
+    z-index: 3000 !important;
+    width: 90vw !important; 
+  }
+  .leaflet-popup-tip-container {
+    display: none !important;
+  }
+  .leaflet-popup-content-wrapper {
+    width: 100% !important;
+    border-radius: 16px !important; 
+    box-shadow: 0 -5px 25px rgba(0,0,0,0.2) !important;
+  }
+  .leaflet-popup-content {
+    max-height: 60vh; 
+    overflow-y: auto;
+    width: 100% !important;
+  }
+}
+@media (max-width: 768px) {
+    #map {
+        left: 0 !important;
+        width: 100% !important;
+    }
+    #sidebar {
+        left: 0 !important;
+        width: 100% !important;
+    }
+    #sidebar.collapsed ~ #map {
+        left: 0 !important;
+        width: 100% !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .leaflet-popup {
+        position: fixed !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        width: 95vw !important; 
+        max-width: 95vw !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        z-index: 9999 !important;
+    }
+    .leaflet-popup-content-wrapper {
+        width: 100% !important;
+        height: auto !important;
+        max-height: 80vh !important; 
+        border-radius: 12px !important;
+        overflow-y: auto !important; 
+        box-shadow: 0 0 50px rgba(0,0,0,0.5) !important;
+    }
+    .leaflet-popup-tip-container {
+        display: none !important;
+    }
+    .leaflet-popup-content {
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    .leaflet-popup-close-button {
+        padding: 12px !important;
+        font-size: 24px !important;
+        color: #333 !important;
+        z-index: 10000 !important;
+    }
+}
+marker.bindPopup(popupContent, {
+    autoPan: false,           // CRITICAL: prevents map from jumping
+    keepInView: false,        // Prevents Leaflet from fighting your CSS
+    closeButton: true,
+    className: 'mobile-full-popup'
+});
+@media (max-width: 768px) {
+  .leaflet-popup {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    bottom: auto !important;
+    transform: translate(-50%, -50%) !important; 
+    margin: 0 !important;
+    width: 85vw !important; 
+    z-index: 4000 !important;
+  }
+  .leaflet-popup-tip-container {
+    display: none !important;
+  }
+  .leaflet-popup-content-wrapper {
+    width: 100% !important;
+    border-radius: 12px !important;
+    box-shadow: 0 0 20px rgba(0,0,0,0.3) !important;
+  }
+
+  .leaflet-popup-content {
+    width: 100% !important;
+    margin: 0 !important;
+  }
+}
+@media (max-width: 600px) {
+    #controls {
+        top: 10px !important;
+        left: 10px !important;
+        transform: none !important;
+        width: auto !important;
+        max-width: 180px; 
+        padding: 8px 12px !important;
+        font-size: 12px;
+    }
+    #yearSlider {
+        width: 100% !important; 
+        margin: 5px 0 !important;
+    }
+    #yearLabel {
+        font-size: 14px !important;
+    }
+    #controls label {
+        display: block;
+        font-size: 11px;
+        white-space: nowrap;
+    }
+}
+/* =========================
+ADAPTIVE POPUP
+========================= */
+.leaflet-popup-content-wrapper {
+    width: auto !important;
+    max-width: 95vw !important;
+}
+@media (min-width: 900px) {
+    .leaflet-popup-content-wrapper {
+        min-width: 520px;
+        max-width: 600px;
+    }
+}
+@media (max-width: 900px) {
+    .leaflet-popup-content-wrapper {
+        min-width: 320px;
+        max-width: 90vw;
+    }
+
+    .popup-carousel {
+        height: 180px;
+    }
+}
+@media (max-width: 600px) {
+    .leaflet-popup-content-wrapper {
+        min-width: 260px;
+        max-width: 95vw;
+        border-radius: 10px;
+    }
+    .popup-carousel {
+        height: 150px;
+    }
+    .popup-title {
+        font-size: 15px;
+    }
+    .popup-chart {
+        height: 140px;
+    }
+}
 </style>
 </head>
 <body>
@@ -731,7 +1331,7 @@ RESPONSIVE DESIGN
     <img src="https://raw.githubusercontent.com/Ethann-5/Frog_Map_Assets/main/Images/Logos/SCC_Logo.png" style="height:60px;">
   </div>
 
-    <p>Welcome to ECOllaboration's Frog Survey Map. Click on the sites to explore the citizen science data that has been collected over the years. (For the best experience for mobile users, please view horizontally).</p>
+    <p>Welcome to  Frog Survey Map. Click on the sites to explore the citizen science data that has been collected over the years.</p>
     <p>Use the year slider to navigate through time, and see how frog species abundace has changed. Use the resources on the left hand side to explore frog conservation and what you can do to help.</p>
     <p>A special thank you to the Sunshine Coast Council, land holders and all the volunteers who have helped with this project.</p>
   </div>
@@ -799,11 +1399,20 @@ RESPONSIVE DESIGN
 <div id="plotsButton">🐸 📊 Plots</div>
 
 <div id="plotWindow">
-<img id="plotLogo" src="https://raw.githubusercontent.com/Ethann-5/Frog_Map_Assets/main/Images/Logos/ECO_Logo.jpg">
-<button id="backButton">⬅ Back to Map</button>
+<button id="closePlotBtn" style="
+    position:absolute;
+    top:15px;
+    right:15px;
+    background:none;
+    border:none;
+    font-size:20px;
+    cursor:pointer;
+">✕</button>
 
 
-<h2>Species Analysis</h2>
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+    <h2 style="margin:0;">📊 Analysis</h2>
+</div>
 
 <label>Species:</label>
 <select id="speciesSelect">
@@ -846,7 +1455,12 @@ const SPECIES_META_URL = "https://raw.githubusercontent.com/Ethann-5/Frog_Map_As
 /* =========================
 MAP SETUP
 ========================= */
-const map = L.map("map").setView([-26.58,153.09],11);
+const map = L.map("map", {
+    tap: true,
+    scrollWheelZoom: false,   
+    dragging: true,
+    touchZoom: true
+}).setView([-26.58,153.09],11);
 const baseLayer = L.tileLayer(
   'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
   { attribution:"&copy; Esri" }
@@ -861,6 +1475,12 @@ const baseLayers = {
     "Street Map": streetLayer
 };
 
+L.control.scale({
+    position: "bottomright",
+    metric: true,
+    imperial: false
+}).addTo(map);
+
 L.control.layers(baseLayers, null, { position: 'topright' }).addTo(map);
 
 map.zoomControl.setPosition('topright');
@@ -871,6 +1491,7 @@ map.zoomControl.setPosition('topright');
 DATA STORAGE
 ========================= */
 let surveyData = [], siteMeta = {}, speciesMeta = {};
+let siteMarkers = {};
 let currentYear;
 let globalMinCount = Infinity, globalMaxCount = -Infinity;
 
@@ -1009,7 +1630,6 @@ function updateMap(){
 
     const removeToads = toadToggle.checked;
 
-    // Aggregate counts per site
     const sitesThisYear = {};
     surveyData.forEach(d => {
         if(d.year !== currentYear) return;
@@ -1031,23 +1651,55 @@ function updateMap(){
         });
 
       marker.on("click", (e) => {
+    document.getElementById("plotWindow").style.display = "none";
     L.DomEvent.stopPropagation(e);
     openPopup(site, true);
 });
 
         marker.addTo(map);
+        siteMarkers[site] = marker;
     });
 }
 
+
+
 map.on("click", () => {
     map.closePopup();
- closeInfoPanel();   
+ closeInfoPanel();
+
+highlightSelectedSites();   
 });
+
+function highlightSelectedSites(){
+
+    const selectedSites = [...document.querySelectorAll(".siteBtn.selected")]
+        .map(b => b.textContent);
+
+    Object.keys(siteMarkers).forEach(site => {
+
+        const marker = siteMarkers[site];
+
+        if(selectedSites.includes(site)){
+            marker.setStyle({
+                weight: 5,
+                color: "#000",
+                fillOpacity: 1
+            });
+        } else {
+            marker.setStyle({
+                weight: 2,
+                color: "#000",
+                fillOpacity: 0.65
+            });
+        }
+
+    });
+}
 
 
 
 /* =========================
-CAROUSEL (FIXED)
+CAROUSEL 
 ========================= */
 
 const carouselState = {};
@@ -1121,6 +1773,9 @@ function openCarouselFullscreen(id, index){
 
     overlay.style.display = "flex";
     overlayImg.src = imgs[index].src;
+
+ document.getElementById("fullscreenPrev").style.display = "block";
+    document.getElementById("fullscreenNext").style.display = "block";
 }
 
 function updateFullscreenImage(){
@@ -1132,9 +1787,6 @@ function updateFullscreenImage(){
 
     overlayImg.src = imgs[carouselState[activeCarouselId]].src;
 }
-
-
-
 /* =========================
 POPUPS
 ========================= */
@@ -1145,93 +1797,166 @@ function openPopup(site, center=true){
         d.site_name === site && d.year === currentYear
     );
 
-    
- let dataHtml = "";
+    const allSiteData = surveyData.filter(d => d.site_name === site);
+
+    // ===== Species chips =====
+    const uniqueSpecies = [...new Set(rows.map(d => d.species_name))];
+    // ===== Counts =====
+    const speciesCount = uniqueSpecies.length;
+    const surveyCount = rows.length;
+
+    // ===== Data tab =====
+    let dataHtml = "";
 rows.forEach(d => {
-    const key = d.species_name.trim();
-    const info = speciesMeta[key];
-    const url = info && info.url ? info.url : "#";
+    const info = speciesMeta[d.species_name];
+    const iucn = info?.iucn || "";
+    const badge = iucn ? `<span class="iucn ${iucn}">${iucn}</span>` : "";
 
     dataHtml += `
-    <div>
-        ${info?.image ? `<img src="${info.image}" alt="${d.common_name}">` : ""}
-        <div>
-            <b>${d.common_name}</b><br>
-            <i>${d.species_name}</i><br>
-            Count: ${d.total_count}<br>
-            <a href="${url}" target="_blank" rel="noopener noreferrer">More info</a>
-        </div>
+<div class="data-row">
+
+    <div class="data-img">
+        <img src="${info?.image || ''}">
     </div>
-    `;
+
+    <div class="data-text">
+        <b>${d.common_name}</b> ${badge}<br>
+        <i>${d.species_name}</i><br>
+        Count: ${d.total_count}<br>
+        ${info?.url ? `<a href="${info.url}" target="_blank" class="more-info">More info</a>` : ""}
+    </div>
+
+</div>`;
 });
 
+    const chartId = "chart-" + site.replace(/\s/g,'');
+
     const html = `
-<div style="max-width:700px; font-family:Arial, sans-serif; border-radius:10px; box-shadow:0 4px 12px rgba(0,0,0,0.25); padding:12px;">
-    <div style="text-align:right;">
-        <button id="popupCloseBtn" style="cursor:pointer; background:none; border:none; font-size:18px;">✕</button>
-    </div>
-    <div class="tabs" style="margin-bottom:10px;">
-        <span class="tab active" onclick="switchTab(event,'images')">Images</span>
-        <span class="tab" onclick="switchTab(event,'description')">Description</span>
-        <span class="tab" onclick="switchTab(event,'data')">Data</span>
+<div class="popup-card">
+
+   <div class="popup-carousel">
+
+    <button class="popupFullscreenBtn" onclick="openCarouselFullscreen('${site.replace(/\s/g,'')}', 0)">⛶</button>
+
+    ${createCarousel(meta.images, site.replace(/\s/g,''))}
+</div>
+
+    <div class="popup-header">
+        <div class="popup-title">📍 ${site}</div>
+        <div class="popup-subtitle">${meta.river || ""}</div>
     </div>
 
-    <div id="images" class="tabContent active">
-        ${createCarousel(meta.images, site.replace(/\s/g,''))}
+    <div class="popup-meta">
+        ${speciesCount} species 
     </div>
 
-    <div id="description" class="tabContent">
-        <p style="margin:4px 0 0 0;">${meta.description}</p>
+    <div class="popup-tabs">
+        <div class="popup-tab active" onclick="switchTab(event,'images')">Overview</div>
+        <div class="popup-tab" onclick="switchTab(event,'description')">Info</div>
+        <div class="popup-tab" onclick="switchTab(event,'data')">Data</div>
     </div>
 
-    <div id="data" class="tabContent">${dataHtml}</div>
+    <div class="popup-body">
+
+      <div id="images" class="tabContent active">
+
+    <div style="margin-bottom:6px; font-size:13px; color:#666;">
+        Total abundance over time
+    </div>
+
+    <canvas id="${chartId}" class="popup-chart"></canvas>
+
+</div>
+
+        <div id="description" class="tabContent">
+            ${meta.description || "No description available"}
+        </div>
+
+        <div id="data" class="tabContent">
+            ${dataHtml}
+        </div>
+
+    </div>
 </div>
 `;
 
-const popup = L.popup({ 
-    maxWidth: 700,
-    minWidth: 500,
-    autoPanPadding: [20, 20],
-    closeButton: false
-})
-.setLatLng([+meta.lat,+meta.lon])
-.setContent(html)
-.openOn(map);
+    const popup = L.popup({ 
+        maxWidth: 900,
+        minWidth: 500,
+        closeButton: true
+    })
+    .setLatLng([+meta.lat,+meta.lon])
+    .setContent(html)
+    .openOn(map);
+    
+    setTimeout(() => {
+        const ctx = document.getElementById(chartId);
+        if(!ctx) return;
 
- 
-    if(center){
-        setTimeout(()=>{
-            const popupEl = popup.getElement();
-            if(popupEl){
-                const popupHeight = popupEl.offsetHeight;
-                const mapHeight = map.getContainer().offsetHeight;
-                const offset = (mapHeight/2)-(popupHeight/2);
-                const latlng = popup.getLatLng();
-                const point = map.latLngToContainerPoint(latlng);
-                const newPoint = L.point(point.x, point.y - offset);
-                const newLatLng = map.containerPointToLatLng(newPoint);
-                map.setView(newLatLng, map.getZoom(), { animate:true });
+        const years = [...new Set(allSiteData.map(d=>d.year))].sort();
+
+        const counts = years.map(y =>
+            allSiteData
+                .filter(d=>d.year===y)
+                .reduce((sum,v)=>sum+v.total_count,0)
+        );
+
+        new Chart(ctx, {
+    type: "line",
+    data: {
+        labels: years,
+        datasets: [{
+            label: "Total Count",
+            data: counts,
+            tension: 0.35,
+            fill: true,
+            pointRadius: 3
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { 
+            legend: { display: false }
+        },
+        scales: {
+            x: { 
+                display: true,
+                grid: { display: false }
+            },
+            y: { 
+                display: true,
+                grid: { color: "#eee" }
             }
-        },50);
+        }
     }
-
-
-    setTimeout(()=>{
-        const btn = document.getElementById("popupCloseBtn");
-        if(btn) btn.addEventListener("click", ()=>map.closePopup(popup));
-    },50);
+});
+    }, 100);
 }
+
+function filterBySpecies(species){
+    speciesSelect.value = species;
+    speciesSelect.dispatchEvent(new Event("change"));
+}
+
 /* =========================
 TAB SWITCH
 ========================= */
 function switchTab(evt, id){
-    document.querySelectorAll(".tabContent").forEach(t => t.classList.remove("active"));
-    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
 
+    // hide all content
+    document.querySelectorAll(".tabContent").forEach(t => {
+        t.classList.remove("active");
+    });
+
+    // remove active state from ALL popup tabs
+    document.querySelectorAll(".popup-tab").forEach(t => {
+        t.classList.remove("active");
+    });
+
+    // activate selected
     document.getElementById(id).classList.add("active");
-    evt.target.classList.add("active");
+    evt.currentTarget.classList.add("active");
 }
-
 
 /* =========================
 PLOT WINDOW CONTROLS
@@ -1239,11 +1964,18 @@ PLOT WINDOW CONTROLS
 
 const plotBtn = document.getElementById("plotsButton");
 const plotWindow = document.getElementById("plotWindow");
-const backBtn = document.getElementById("backButton");
+const closePlotBtn = document.getElementById("closePlotBtn");
 
 plotBtn.onclick = () => plotWindow.style.display = "block";
-backBtn.onclick = () => plotWindow.style.display = "none";
 
+closePlotBtn.onclick = () => {
+    plotWindow.style.display = "none";
+
+    // remove active state
+    document.querySelectorAll(".sideBtn").forEach(btn => {
+        btn.classList.remove("active");
+    });
+};
 /* =========================
 SPECIES DROPDOWN
 ========================= */
@@ -1302,6 +2034,7 @@ function buildSiteButtons(selectedSpecies = "ALL") {
             btn.classList.toggle("selected");
             btn.style.background = btn.classList.contains("selected") ? siteColors[site] : "white";
             updateFullPlot();
+highlightSelectedSites(); 
         };
 
       
@@ -1314,7 +2047,6 @@ function buildSiteButtons(selectedSpecies = "ALL") {
         siteButtonsDiv.appendChild(wrap);
     });
 }
-
 /* =========================
 UPDATE SITE BUTTONS WHEN SPECIES CHANGES
 ========================= */
@@ -1425,9 +2157,6 @@ fullChart.data.datasets = datasets;
 fullChart.update();
 
 }
-
-
-
 /* =========================
 SPECIES INFO PANEL
 ========================= */
@@ -1489,13 +2218,16 @@ window.addEventListener("DOMContentLoaded", () => {
     const fullscreenPrev = document.getElementById("fullscreenPrev");
 
     // ===== OPEN =====
-    function openSpeciesFullscreen(){
-        if(!speciesImage.src) return;
+   function openSpeciesFullscreen(){
+    if(!speciesImage.src) return;
 
-        activeCarouselId = null;
-        overlay.style.display = "flex";
-        overlayImg.src = speciesImage.src;
-    }
+    activeCarouselId = null;
+    overlay.style.display = "flex";
+    overlayImg.src = speciesImage.src;
+
+     document.getElementById("fullscreenPrev").style.display = "none";
+    document.getElementById("fullscreenNext").style.display = "none";
+}
 
     imageFullscreenBtn.onclick = openSpeciesFullscreen;
     speciesImage.onclick = openSpeciesFullscreen;
@@ -1547,8 +2279,18 @@ window.addEventListener("DOMContentLoaded", () => {
 /* =========================
 SIDEBAR BUTTON LINK
 ========================= */
-document.getElementById("plotsSidebarBtn").onclick = () => {
+document.getElementById("plotsSidebarBtn").onclick = (e) => {
+
+    // remove active from all
+    document.querySelectorAll(".sideBtn").forEach(btn => {
+        btn.classList.remove("active");
+    });
+    e.currentTarget.classList.add("active");
+
     plotWindow.style.display = "block";
+
+    // close info panel if open
+    closeInfoPanel();
 };
 
 document.getElementById("collapseBtn").onclick = () => {
@@ -1625,7 +2367,7 @@ INFO PANELS
 
     toads: {
         title: "Cane Toad Resources",
-        icon: "https://cdn-icons-png.flaticon.com/512/3069/3069172.png",
+           icon: "⚠️",
         blurb: "Learn how to identify and manage invasive cane toads & how you can distinguish them from native species.",
         links: [
             { text: "Control cane toads | ECOllabroation", url: "https://ecollaboration.org.au/control-cane-toads/" },
@@ -1636,7 +2378,7 @@ INFO PANELS
 
     chytrid: {
         title: "Chytrid Resources",
-         icon: "https://cdn-icons-png.flaticon.com/512/4149/4149670.png",
+         icon: "🍄",
         blurb: "Explore infromation on Chytrid fungus, a major threat to all amphibians. These resources show what research is being conducted & how you can help.",
         links: [
             { text: "Chytrid Information | QLD Government", url: "https://www.dcceew.gov.au/sites/default/files/documents/c-disease_1.pdf" },
@@ -1649,7 +2391,7 @@ INFO PANELS
 
     gardening: {
         title: "Gardening for Frogs",
-        icon: "https://cdn-icons-png.flaticon.com/512/2909/2909767.png",
+        icon: "🌱",
         blurb: "Discover how you can make frog friendly habitat at home, covering plants, ponds and frog firendly infrstructure.",
         links: [
             { text: "Creating a frog friendly garden | SCC", url: "https://www.sunshinecoast.qld.gov.au/environment/education-resources-and-events/environment-resources-and-publications/backyard-conservation/creating-a-frog-friendly-garden" },
@@ -1660,7 +2402,7 @@ INFO PANELS
 
     involved: {
         title: "Getting Involved",
-        icon: "https://cdn-icons-png.flaticon.com/512/1077/1077012.png",
+        icon: "🤝",
         blurb: "Learn how you can contribute to frog conservation & citizen science.",
         links: [
             { text: "ECOllaboration frog surveys", url: "https://ecollaboration.org.au/project/frog-monitoring/" },
@@ -1674,7 +2416,7 @@ INFO PANELS
 
 
 function openInfoPanel(type){
-
+document.getElementById("plotWindow").style.display = "none";
  document.querySelectorAll(".sideBtn").forEach(btn => {
         btn.classList.remove("active");
     });
@@ -1702,7 +2444,7 @@ function openInfoPanel(type){
     <div class="panelHeader">
         <div class="panelHeader">
     <div class="panelHeaderLeft">
-        <span class="panelHeaderIcon iconEmoji"></span>
+        <span class="panelHeaderIcon iconEmoji">${panelData.icon}</span>
         <h2>${panelData.title}</h2>
     </div>
     <span id="closePanelBtn">✕</span>
